@@ -94,7 +94,7 @@ class SVGP(SparseGP):
 
     def stochastic_grad(self, parameters):
         self.set_data(*self.new_batch())
-        return self._grads(parameters)
+        return super(SVGP, self)._grads(parameters)
 
     def optimizeWithFreezingZ(self):
         self.Z.fix()
@@ -103,3 +103,20 @@ class SVGP(SparseGP):
         self.Z.unfix()
         self.kern.constrain_positive()
         self.optimize('bfgs')
+
+    def _grads(self, parameters):
+        if self.batchsize is None:
+            return super(SVGP, self)._grads(parameters)
+        else:
+            return self.stochastic_grad(parameters)
+
+    def optimize(self, optimizer=None, *args, **kwargs):
+        if self.batchsize is None:
+            return super(SVGP, self).optimize(optimizer, *args, **kwargs)
+        else:
+            stochastic_optimizers = ['adadelta']
+            if optimizer not in stochastic_optimizers:
+                raise ValueError("Must choose an optimizer that allows for stochastic gradients, try 'adadelta'")
+            return super(SVGP, self).optimize(optimizer, *args, **kwargs)
+
+

@@ -5,6 +5,7 @@ from .gp_regression import GPRegression
 from .gp_classification import GPClassification
 from .sparse_gp_regression import SparseGPRegression
 from .sparse_gp_classification import SparseGPClassification, SparseGPClassificationUncertainInput
+from .svi_gp_regression import SVIGPRegression
 from .gplvm import GPLVM
 from .bcgplvm import BCGPLVM
 from .sparse_gplvm import SparseGPLVM
