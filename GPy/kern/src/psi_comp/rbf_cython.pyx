@@ -193,7 +193,7 @@ def update_psicovn_der(double [:,:,:] dpsicov, double [:,:] psi1, double [:,:,:]
 
                 dmu[n,q] += dpsicov_local*(-2.*psi2n*muZhat/psi2_denom - psi1_2*(Z1mu+Z2mu)/psi1_denom)
                 dS[n,q] += dpsicov_local*(psi2n*(2.*muZhat2_denom-1.)/psi2_denom - psi1_2*(Z1mu2_denom+Z2mu2_denom-2.)/(2.*psi1_denom))
-                dl2[q] += dpsicov_local*(psi2[n,m1,m2]*((Snq/l2q+muZhat2_denom)/psi2_denom+Z1Z2*Z1Z2/(4.*l2q*l2q))  \
+                dl2[q] += dpsicov_local*(psi2n*((Snq/l2q+muZhat2_denom)/psi2_denom+Z1Z2*Z1Z2/(4.*l2q*l2q))  \
                             - psi1_2*(Z1mu2_denom+Z2mu2_denom+2.*Snq/l2q)/(2.*psi1_denom))
-                dZ[m1,q] += dpsicov_local*(psi2[n,m1,m2]*(muZhat/psi2_denom-Z1Z2/(2*l2q)) + psi1_2*Z1mu/psi1_denom)
-                dZ[m2,q] += dpsicov_local*(psi2[n,m1,m2]*(muZhat/psi2_denom+Z1Z2/(2*l2q)) + psi1_2*Z2mu/psi1_denom)
+                dZ[m1,q] += dpsicov_local*(psi2n*(muZhat/psi2_denom-Z1Z2/(2*l2q)) + psi1_2*Z1mu/psi1_denom)
+                dZ[m2,q] += dpsicov_local*(psi2n*(muZhat/psi2_denom+Z1Z2/(2*l2q)) + psi1_2*Z2mu/psi1_denom)
