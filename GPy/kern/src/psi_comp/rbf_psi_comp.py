@@ -185,7 +185,6 @@ def _psi2compDer(dL_dpsi2, variance, lengthscale, Z, mu, S):
              2*Lpsi2_M.T.dot(mu*denom) - Lpsi2_M.T.dot(denom)*Z - (Lpsi2.reshape(N,M*M).T.dot(denom).reshape(M,M,Q)*Z[None,:,:]).sum(1)#np.einsum('nmo,oq,nq->mq',Lpsi2,Z,denom)
     _dL_dl = 2*lengthscale* ((S/lengthscale2*denom+np.square(mu*denom))*Lpsi2sum[:,None]+(Lpsi2Z2-Lpsi2Z2p)/(2*np.square(lengthscale2))-
                              (2*mu*denom2)*Lpsi2Zhat+denom2*Lpsi2Zhat2).sum(axis=0)
-
     return _dL_dvar, _dL_dl, _dL_dZ, _dL_dmu, _dL_dS
 
 _psi1computations = Cacher(__psi1computations, limit=5)

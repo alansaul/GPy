@@ -172,7 +172,7 @@ class Kern(Parameterized):
         """Set the gradients of all parameters when doing full (N) inference."""
         raise NotImplementedError
 
-    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """
         Set the gradients of all parameters when doing inference with
         uncertain inputs, using expectations of the kernel.
@@ -192,19 +192,29 @@ class Kern(Parameterized):
         dtheta = self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[0]
         self.gradient[:] = dtheta
 
-    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
+    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """
         Returns the derivative of the objective wrt Z, using the chain rule
         through the expectation variables.
         """
         return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[1]
 
-    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         """
         Compute the gradients wrt the parameters of the variational
         distruibution q(X), chain-ruling via the expectations of the kernel
         """
         return self.psicomp.psiDerivativecomputations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)[2:]
+
+    def update_gradients_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        dtheta = self.psicomp.psiDerivativecomputations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)[0]
+        self.gradient[:] = dtheta
+
+    def gradients_Z_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        return self.psicomp.psiDerivativecomputations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)[1]
+
+    def gradients_qX_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        return self.psicomp.psiDerivativecomputations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)[2:]
 
     def input_sensitivity(self, summarize=True):
         """

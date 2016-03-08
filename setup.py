@@ -76,7 +76,12 @@ else:
     compile_flags = [ '-fopenmp', '-O3']
     link_args = ['-lgomp' ]
 
-ext_mods = [Extension(name='GPy.kern.src.stationary_cython',
+ext_mods = [Extension(name='GPy.kern.src.psi_comp.rbf_cython',
+                      sources=['GPy/kern/src/psi_comp/rbf_cython.c'],
+                      include_dirs=[np.get_include(),'.'],
+                      extra_compile_args=compile_flags,
+                      extra_link_args = link_args),
+            Extension(name='GPy.kern.src.stationary_cython',
                       sources=['GPy/kern/src/stationary_cython.c',
                                'GPy/kern/src/stationary_utils.c'],
                       include_dirs=[np.get_include(),'.'],

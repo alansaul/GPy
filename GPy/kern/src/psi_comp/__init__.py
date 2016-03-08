@@ -32,7 +32,7 @@ class PSICOMP_RBF(PSICOMP):
             raise ValueError("unknown distriubtion received for psi-statistics")
 
     @Cache_this(limit=10, ignore_args=(0,2,3,4))
-    def psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         variance, lengthscale = kern.variance, kern.lengthscale
         if isinstance(variational_posterior, variational.NormalPosterior):
             return rbf_psi_comp.psiDerivativecomputations(dL_dpsi0, dL_dpsi1, dL_dpsi2, variance, lengthscale, Z, variational_posterior)
@@ -66,3 +66,4 @@ class PSICOMP_Linear(PSICOMP):
 
 from . import ssrbf_psi_gpucomp
 from .rbf_psi_gpucomp import PSICOMP_RBF_GPU
+from .rbf_psi_comp_cython import PSICOMP_RBF_Cython
