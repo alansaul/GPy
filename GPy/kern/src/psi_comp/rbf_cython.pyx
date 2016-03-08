@@ -169,12 +169,14 @@ def update_psicovn_der(double [:,:,:] dpsicov, double [:,:] psi1, double [:,:,:]
     cdef int Q = mu.shape[1]
     cdef int M2 = M*M
     cdef int m1,m2, n, m_idx, q
-    cdef double dpsicov_local, Snq, l2q, Z1Z2, muZhat, psi2_denom, muZhat2_denom, Z1mu, Z2mu, psi1_denom, Z1mu2_denom, Z2mu2_denom, psi1_2
+    cdef double dpsicov_local, Snq, l2q, Z1Z2, muZhat, psi2_denom, muZhat2_denom, Z1mu, Z2mu, psi1_denom, Z1mu2_denom, Z2mu2_denom, psi1_2, psi2n
     for m_idx in range(M2):
         m1 = m_idx/M
         m2 = m_idx%M
         for n in range(N):
             dpsicov_local = dpsicov[n,m1,m2]
+            psi1_2 = psi1[n,m1]*psi1[n,m2]
+            psi2n = psi2[n,m1,m2]
             for q in range(Q):
                 Snq = S[n,q]
                 l2q = l2[q]
@@ -183,15 +185,14 @@ def update_psicovn_der(double [:,:,:] dpsicov, double [:,:] psi1, double [:,:,:]
                 psi2_denom = 2.*S[n,q]+l2[q]
                 muZhat2_denom = muZhat*muZhat/psi2_denom
 
-                psi1_2 = psi1[n,m1]*psi1[n,m2]
                 Z1mu = Z[m1,q] - mu[n,q]
                 Z2mu = Z[m2,q] - mu[n,q]
                 psi1_denom = S[n,q] + l2[q]
                 Z1mu2_denom = Z1mu*Z1mu/psi1_denom
                 Z2mu2_denom = Z2mu*Z2mu/psi1_denom
 
-                dmu[n,q] += dpsicov_local*(-2.*psi2[n,m1,m2]*muZhat/psi2_denom - psi1_2*(Z1mu+Z2mu)/psi1_denom)
-                dS[n,q] += dpsicov_local*(psi2[n,m1,m2]*(2.*muZhat2_denom-1.)/psi2_denom - psi1_2*(Z1mu2_denom+Z2mu2_denom-2.)/(2.*psi1_denom))
+                dmu[n,q] += dpsicov_local*(-2.*psi2n*muZhat/psi2_denom - psi1_2*(Z1mu+Z2mu)/psi1_denom)
+                dS[n,q] += dpsicov_local*(psi2n*(2.*muZhat2_denom-1.)/psi2_denom - psi1_2*(Z1mu2_denom+Z2mu2_denom-2.)/(2.*psi1_denom))
                 dl2[q] += dpsicov_local*(psi2[n,m1,m2]*((Snq/l2q+muZhat2_denom)/psi2_denom+Z1Z2*Z1Z2/(4.*l2q*l2q))  \
                             - psi1_2*(Z1mu2_denom+Z2mu2_denom+2.*Snq/l2q)/(2.*psi1_denom))
                 dZ[m1,q] += dpsicov_local*(psi2[n,m1,m2]*(muZhat/psi2_denom-Z1Z2/(2*l2q)) + psi1_2*Z1mu/psi1_denom)

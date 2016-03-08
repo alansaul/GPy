@@ -1589,6 +1589,7 @@ static char __pyx_k_error[] = "error";
 static char __pyx_k_flags[] = "flags";
 static char __pyx_k_m_idx[] = "m_idx";
 static char __pyx_k_numpy[] = "numpy";
+static char __pyx_k_psi2n[] = "psi2n";
 static char __pyx_k_range[] = "range";
 static char __pyx_k_shape[] = "shape";
 static char __pyx_k_start[] = "start";
@@ -1784,6 +1785,7 @@ static PyObject *__pyx_n_s_psi1_local;
 static PyObject *__pyx_n_s_psi2;
 static PyObject *__pyx_n_s_psi2_denom;
 static PyObject *__pyx_n_s_psi2_local;
+static PyObject *__pyx_n_s_psi2n;
 static PyObject *__pyx_n_s_psicov;
 static PyObject *__pyx_n_s_psicov_local;
 static PyObject *__pyx_n_s_pyx_getbuffer;
@@ -4445,6 +4447,7 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
   double __pyx_v_Z1mu2_denom;
   double __pyx_v_Z2mu2_denom;
   double __pyx_v_psi1_2;
+  double __pyx_v_psi2n;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
@@ -4454,15 +4457,15 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
   Py_ssize_t __pyx_t_5;
   Py_ssize_t __pyx_t_6;
   Py_ssize_t __pyx_t_7;
-  int __pyx_t_8;
-  int __pyx_t_9;
+  Py_ssize_t __pyx_t_8;
+  Py_ssize_t __pyx_t_9;
   Py_ssize_t __pyx_t_10;
   Py_ssize_t __pyx_t_11;
   Py_ssize_t __pyx_t_12;
   Py_ssize_t __pyx_t_13;
   Py_ssize_t __pyx_t_14;
-  Py_ssize_t __pyx_t_15;
-  Py_ssize_t __pyx_t_16;
+  int __pyx_t_15;
+  int __pyx_t_16;
   Py_ssize_t __pyx_t_17;
   Py_ssize_t __pyx_t_18;
   Py_ssize_t __pyx_t_19;
@@ -4508,9 +4511,6 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
   Py_ssize_t __pyx_t_59;
   Py_ssize_t __pyx_t_60;
   Py_ssize_t __pyx_t_61;
-  Py_ssize_t __pyx_t_62;
-  Py_ssize_t __pyx_t_63;
-  Py_ssize_t __pyx_t_64;
   __Pyx_RefNannySetupContext("update_psicovn_der", 0);
 
   /* "GPy/kern/src/psi_comp/rbf_cython.pyx":167
@@ -4545,13 +4545,13 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *     cdef int Q = mu.shape[1]
  *     cdef int M2 = M*M             # <<<<<<<<<<<<<<
  *     cdef int m1,m2, n, m_idx, q
- *     cdef double dpsicov_local, Snq, l2q, Z1Z2, muZhat, psi2_denom, muZhat2_denom, Z1mu, Z2mu, psi1_denom, Z1mu2_denom, Z2mu2_denom, psi1_2
+ *     cdef double dpsicov_local, Snq, l2q, Z1Z2, muZhat, psi2_denom, muZhat2_denom, Z1mu, Z2mu, psi1_denom, Z1mu2_denom, Z2mu2_denom, psi1_2, psi2n
  */
   __pyx_v_M2 = (__pyx_v_M * __pyx_v_M);
 
   /* "GPy/kern/src/psi_comp/rbf_cython.pyx":173
  *     cdef int m1,m2, n, m_idx, q
- *     cdef double dpsicov_local, Snq, l2q, Z1Z2, muZhat, psi2_denom, muZhat2_denom, Z1mu, Z2mu, psi1_denom, Z1mu2_denom, Z2mu2_denom, psi1_2
+ *     cdef double dpsicov_local, Snq, l2q, Z1Z2, muZhat, psi2_denom, muZhat2_denom, Z1mu, Z2mu, psi1_denom, Z1mu2_denom, Z2mu2_denom, psi1_2, psi2n
  *     for m_idx in range(M2):             # <<<<<<<<<<<<<<
  *         m1 = m_idx/M
  *         m2 = m_idx%M
@@ -4561,7 +4561,7 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
     __pyx_v_m_idx = __pyx_t_2;
 
     /* "GPy/kern/src/psi_comp/rbf_cython.pyx":174
- *     cdef double dpsicov_local, Snq, l2q, Z1Z2, muZhat, psi2_denom, muZhat2_denom, Z1mu, Z2mu, psi1_denom, Z1mu2_denom, Z2mu2_denom, psi1_2
+ *     cdef double dpsicov_local, Snq, l2q, Z1Z2, muZhat, psi2_denom, muZhat2_denom, Z1mu, Z2mu, psi1_denom, Z1mu2_denom, Z2mu2_denom, psi1_2, psi2n
  *     for m_idx in range(M2):
  *         m1 = m_idx/M             # <<<<<<<<<<<<<<
  *         m2 = m_idx%M
@@ -4583,7 +4583,7 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *         m2 = m_idx%M
  *         for n in range(N):             # <<<<<<<<<<<<<<
  *             dpsicov_local = dpsicov[n,m1,m2]
- *             for q in range(Q):
+ *             psi1_2 = psi1[n,m1]*psi1[n,m2]
  */
     __pyx_t_3 = __pyx_v_N;
     for (__pyx_t_4 = 0; __pyx_t_4 < __pyx_t_3; __pyx_t_4+=1) {
@@ -4593,8 +4593,8 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *         m2 = m_idx%M
  *         for n in range(N):
  *             dpsicov_local = dpsicov[n,m1,m2]             # <<<<<<<<<<<<<<
- *             for q in range(Q):
- *                 Snq = S[n,q]
+ *             psi1_2 = psi1[n,m1]*psi1[n,m2]
+ *             psi2n = psi2[n,m1,m2]
  */
       __pyx_t_5 = __pyx_v_n;
       __pyx_t_6 = __pyx_v_m1;
@@ -4604,136 +4604,148 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
       /* "GPy/kern/src/psi_comp/rbf_cython.pyx":178
  *         for n in range(N):
  *             dpsicov_local = dpsicov[n,m1,m2]
+ *             psi1_2 = psi1[n,m1]*psi1[n,m2]             # <<<<<<<<<<<<<<
+ *             psi2n = psi2[n,m1,m2]
+ *             for q in range(Q):
+ */
+      __pyx_t_8 = __pyx_v_n;
+      __pyx_t_9 = __pyx_v_m1;
+      __pyx_t_10 = __pyx_v_n;
+      __pyx_t_11 = __pyx_v_m2;
+      __pyx_v_psi1_2 = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_8 * __pyx_v_psi1.strides[0]) ) + __pyx_t_9 * __pyx_v_psi1.strides[1]) ))) * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_10 * __pyx_v_psi1.strides[0]) ) + __pyx_t_11 * __pyx_v_psi1.strides[1]) ))));
+
+      /* "GPy/kern/src/psi_comp/rbf_cython.pyx":179
+ *             dpsicov_local = dpsicov[n,m1,m2]
+ *             psi1_2 = psi1[n,m1]*psi1[n,m2]
+ *             psi2n = psi2[n,m1,m2]             # <<<<<<<<<<<<<<
+ *             for q in range(Q):
+ *                 Snq = S[n,q]
+ */
+      __pyx_t_12 = __pyx_v_n;
+      __pyx_t_13 = __pyx_v_m1;
+      __pyx_t_14 = __pyx_v_m2;
+      __pyx_v_psi2n = (*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_12 * __pyx_v_psi2.strides[0]) ) + __pyx_t_13 * __pyx_v_psi2.strides[1]) ) + __pyx_t_14 * __pyx_v_psi2.strides[2]) )));
+
+      /* "GPy/kern/src/psi_comp/rbf_cython.pyx":180
+ *             psi1_2 = psi1[n,m1]*psi1[n,m2]
+ *             psi2n = psi2[n,m1,m2]
  *             for q in range(Q):             # <<<<<<<<<<<<<<
  *                 Snq = S[n,q]
  *                 l2q = l2[q]
  */
-      __pyx_t_8 = __pyx_v_Q;
-      for (__pyx_t_9 = 0; __pyx_t_9 < __pyx_t_8; __pyx_t_9+=1) {
-        __pyx_v_q = __pyx_t_9;
+      __pyx_t_15 = __pyx_v_Q;
+      for (__pyx_t_16 = 0; __pyx_t_16 < __pyx_t_15; __pyx_t_16+=1) {
+        __pyx_v_q = __pyx_t_16;
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":179
- *             dpsicov_local = dpsicov[n,m1,m2]
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":181
+ *             psi2n = psi2[n,m1,m2]
  *             for q in range(Q):
  *                 Snq = S[n,q]             # <<<<<<<<<<<<<<
  *                 l2q = l2[q]
  *                 Z1Z2 = Z[m1,q] - Z[m2,q]
  */
-        __pyx_t_10 = __pyx_v_n;
-        __pyx_t_11 = __pyx_v_q;
-        __pyx_v_Snq = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_10 * __pyx_v_S.strides[0]) ) + __pyx_t_11 * __pyx_v_S.strides[1]) )));
+        __pyx_t_17 = __pyx_v_n;
+        __pyx_t_18 = __pyx_v_q;
+        __pyx_v_Snq = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_17 * __pyx_v_S.strides[0]) ) + __pyx_t_18 * __pyx_v_S.strides[1]) )));
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":180
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":182
  *             for q in range(Q):
  *                 Snq = S[n,q]
  *                 l2q = l2[q]             # <<<<<<<<<<<<<<
  *                 Z1Z2 = Z[m1,q] - Z[m2,q]
  *                 muZhat =  mu[n,q] - (Z[m1,q] + Z[m2,q])/2.
  */
-        __pyx_t_12 = __pyx_v_q;
-        __pyx_v_l2q = (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_12 * __pyx_v_l2.strides[0]) )));
+        __pyx_t_19 = __pyx_v_q;
+        __pyx_v_l2q = (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_19 * __pyx_v_l2.strides[0]) )));
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":181
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":183
  *                 Snq = S[n,q]
  *                 l2q = l2[q]
  *                 Z1Z2 = Z[m1,q] - Z[m2,q]             # <<<<<<<<<<<<<<
  *                 muZhat =  mu[n,q] - (Z[m1,q] + Z[m2,q])/2.
  *                 psi2_denom = 2.*S[n,q]+l2[q]
  */
-        __pyx_t_13 = __pyx_v_m1;
-        __pyx_t_14 = __pyx_v_q;
-        __pyx_t_15 = __pyx_v_m2;
-        __pyx_t_16 = __pyx_v_q;
-        __pyx_v_Z1Z2 = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_13 * __pyx_v_Z.strides[0]) ) + __pyx_t_14 * __pyx_v_Z.strides[1]) ))) - (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_15 * __pyx_v_Z.strides[0]) ) + __pyx_t_16 * __pyx_v_Z.strides[1]) ))));
+        __pyx_t_20 = __pyx_v_m1;
+        __pyx_t_21 = __pyx_v_q;
+        __pyx_t_22 = __pyx_v_m2;
+        __pyx_t_23 = __pyx_v_q;
+        __pyx_v_Z1Z2 = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_20 * __pyx_v_Z.strides[0]) ) + __pyx_t_21 * __pyx_v_Z.strides[1]) ))) - (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_22 * __pyx_v_Z.strides[0]) ) + __pyx_t_23 * __pyx_v_Z.strides[1]) ))));
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":182
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":184
  *                 l2q = l2[q]
  *                 Z1Z2 = Z[m1,q] - Z[m2,q]
  *                 muZhat =  mu[n,q] - (Z[m1,q] + Z[m2,q])/2.             # <<<<<<<<<<<<<<
  *                 psi2_denom = 2.*S[n,q]+l2[q]
  *                 muZhat2_denom = muZhat*muZhat/psi2_denom
  */
-        __pyx_t_17 = __pyx_v_n;
-        __pyx_t_18 = __pyx_v_q;
-        __pyx_t_19 = __pyx_v_m1;
-        __pyx_t_20 = __pyx_v_q;
-        __pyx_t_21 = __pyx_v_m2;
-        __pyx_t_22 = __pyx_v_q;
-        __pyx_v_muZhat = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_mu.data + __pyx_t_17 * __pyx_v_mu.strides[0]) ) + __pyx_t_18 * __pyx_v_mu.strides[1]) ))) - (((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_19 * __pyx_v_Z.strides[0]) ) + __pyx_t_20 * __pyx_v_Z.strides[1]) ))) + (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_21 * __pyx_v_Z.strides[0]) ) + __pyx_t_22 * __pyx_v_Z.strides[1]) )))) / 2.));
+        __pyx_t_24 = __pyx_v_n;
+        __pyx_t_25 = __pyx_v_q;
+        __pyx_t_26 = __pyx_v_m1;
+        __pyx_t_27 = __pyx_v_q;
+        __pyx_t_28 = __pyx_v_m2;
+        __pyx_t_29 = __pyx_v_q;
+        __pyx_v_muZhat = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_mu.data + __pyx_t_24 * __pyx_v_mu.strides[0]) ) + __pyx_t_25 * __pyx_v_mu.strides[1]) ))) - (((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_26 * __pyx_v_Z.strides[0]) ) + __pyx_t_27 * __pyx_v_Z.strides[1]) ))) + (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_28 * __pyx_v_Z.strides[0]) ) + __pyx_t_29 * __pyx_v_Z.strides[1]) )))) / 2.));
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":183
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":185
  *                 Z1Z2 = Z[m1,q] - Z[m2,q]
  *                 muZhat =  mu[n,q] - (Z[m1,q] + Z[m2,q])/2.
  *                 psi2_denom = 2.*S[n,q]+l2[q]             # <<<<<<<<<<<<<<
  *                 muZhat2_denom = muZhat*muZhat/psi2_denom
  * 
  */
-        __pyx_t_23 = __pyx_v_n;
-        __pyx_t_24 = __pyx_v_q;
-        __pyx_t_25 = __pyx_v_q;
-        __pyx_v_psi2_denom = ((2. * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_23 * __pyx_v_S.strides[0]) ) + __pyx_t_24 * __pyx_v_S.strides[1]) )))) + (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_25 * __pyx_v_l2.strides[0]) ))));
+        __pyx_t_30 = __pyx_v_n;
+        __pyx_t_31 = __pyx_v_q;
+        __pyx_t_32 = __pyx_v_q;
+        __pyx_v_psi2_denom = ((2. * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_30 * __pyx_v_S.strides[0]) ) + __pyx_t_31 * __pyx_v_S.strides[1]) )))) + (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_32 * __pyx_v_l2.strides[0]) ))));
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":184
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":186
  *                 muZhat =  mu[n,q] - (Z[m1,q] + Z[m2,q])/2.
  *                 psi2_denom = 2.*S[n,q]+l2[q]
  *                 muZhat2_denom = muZhat*muZhat/psi2_denom             # <<<<<<<<<<<<<<
  * 
- *                 psi1_2 = psi1[n,m1]*psi1[n,m2]
+ *                 Z1mu = Z[m1,q] - mu[n,q]
  */
         __pyx_v_muZhat2_denom = ((__pyx_v_muZhat * __pyx_v_muZhat) / __pyx_v_psi2_denom);
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":186
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":188
  *                 muZhat2_denom = muZhat*muZhat/psi2_denom
  * 
- *                 psi1_2 = psi1[n,m1]*psi1[n,m2]             # <<<<<<<<<<<<<<
- *                 Z1mu = Z[m1,q] - mu[n,q]
- *                 Z2mu = Z[m2,q] - mu[n,q]
- */
-        __pyx_t_26 = __pyx_v_n;
-        __pyx_t_27 = __pyx_v_m1;
-        __pyx_t_28 = __pyx_v_n;
-        __pyx_t_29 = __pyx_v_m2;
-        __pyx_v_psi1_2 = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_26 * __pyx_v_psi1.strides[0]) ) + __pyx_t_27 * __pyx_v_psi1.strides[1]) ))) * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_28 * __pyx_v_psi1.strides[0]) ) + __pyx_t_29 * __pyx_v_psi1.strides[1]) ))));
-
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":187
- * 
- *                 psi1_2 = psi1[n,m1]*psi1[n,m2]
  *                 Z1mu = Z[m1,q] - mu[n,q]             # <<<<<<<<<<<<<<
  *                 Z2mu = Z[m2,q] - mu[n,q]
  *                 psi1_denom = S[n,q] + l2[q]
  */
-        __pyx_t_30 = __pyx_v_m1;
-        __pyx_t_31 = __pyx_v_q;
-        __pyx_t_32 = __pyx_v_n;
-        __pyx_t_33 = __pyx_v_q;
-        __pyx_v_Z1mu = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_30 * __pyx_v_Z.strides[0]) ) + __pyx_t_31 * __pyx_v_Z.strides[1]) ))) - (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_mu.data + __pyx_t_32 * __pyx_v_mu.strides[0]) ) + __pyx_t_33 * __pyx_v_mu.strides[1]) ))));
+        __pyx_t_33 = __pyx_v_m1;
+        __pyx_t_34 = __pyx_v_q;
+        __pyx_t_35 = __pyx_v_n;
+        __pyx_t_36 = __pyx_v_q;
+        __pyx_v_Z1mu = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_33 * __pyx_v_Z.strides[0]) ) + __pyx_t_34 * __pyx_v_Z.strides[1]) ))) - (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_mu.data + __pyx_t_35 * __pyx_v_mu.strides[0]) ) + __pyx_t_36 * __pyx_v_mu.strides[1]) ))));
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":188
- *                 psi1_2 = psi1[n,m1]*psi1[n,m2]
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":189
+ * 
  *                 Z1mu = Z[m1,q] - mu[n,q]
  *                 Z2mu = Z[m2,q] - mu[n,q]             # <<<<<<<<<<<<<<
  *                 psi1_denom = S[n,q] + l2[q]
  *                 Z1mu2_denom = Z1mu*Z1mu/psi1_denom
  */
-        __pyx_t_34 = __pyx_v_m2;
-        __pyx_t_35 = __pyx_v_q;
-        __pyx_t_36 = __pyx_v_n;
-        __pyx_t_37 = __pyx_v_q;
-        __pyx_v_Z2mu = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_34 * __pyx_v_Z.strides[0]) ) + __pyx_t_35 * __pyx_v_Z.strides[1]) ))) - (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_mu.data + __pyx_t_36 * __pyx_v_mu.strides[0]) ) + __pyx_t_37 * __pyx_v_mu.strides[1]) ))));
+        __pyx_t_37 = __pyx_v_m2;
+        __pyx_t_38 = __pyx_v_q;
+        __pyx_t_39 = __pyx_v_n;
+        __pyx_t_40 = __pyx_v_q;
+        __pyx_v_Z2mu = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_37 * __pyx_v_Z.strides[0]) ) + __pyx_t_38 * __pyx_v_Z.strides[1]) ))) - (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_mu.data + __pyx_t_39 * __pyx_v_mu.strides[0]) ) + __pyx_t_40 * __pyx_v_mu.strides[1]) ))));
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":189
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":190
  *                 Z1mu = Z[m1,q] - mu[n,q]
  *                 Z2mu = Z[m2,q] - mu[n,q]
  *                 psi1_denom = S[n,q] + l2[q]             # <<<<<<<<<<<<<<
  *                 Z1mu2_denom = Z1mu*Z1mu/psi1_denom
  *                 Z2mu2_denom = Z2mu*Z2mu/psi1_denom
  */
-        __pyx_t_38 = __pyx_v_n;
-        __pyx_t_39 = __pyx_v_q;
-        __pyx_t_40 = __pyx_v_q;
-        __pyx_v_psi1_denom = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_38 * __pyx_v_S.strides[0]) ) + __pyx_t_39 * __pyx_v_S.strides[1]) ))) + (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_40 * __pyx_v_l2.strides[0]) ))));
+        __pyx_t_41 = __pyx_v_n;
+        __pyx_t_42 = __pyx_v_q;
+        __pyx_t_43 = __pyx_v_q;
+        __pyx_v_psi1_denom = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_41 * __pyx_v_S.strides[0]) ) + __pyx_t_42 * __pyx_v_S.strides[1]) ))) + (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_43 * __pyx_v_l2.strides[0]) ))));
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":190
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":191
  *                 Z2mu = Z[m2,q] - mu[n,q]
  *                 psi1_denom = S[n,q] + l2[q]
  *                 Z1mu2_denom = Z1mu*Z1mu/psi1_denom             # <<<<<<<<<<<<<<
@@ -4742,88 +4754,82 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  */
         __pyx_v_Z1mu2_denom = ((__pyx_v_Z1mu * __pyx_v_Z1mu) / __pyx_v_psi1_denom);
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":191
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":192
  *                 psi1_denom = S[n,q] + l2[q]
  *                 Z1mu2_denom = Z1mu*Z1mu/psi1_denom
  *                 Z2mu2_denom = Z2mu*Z2mu/psi1_denom             # <<<<<<<<<<<<<<
  * 
- *                 dmu[n,q] += dpsicov_local*(-2.*psi2[n,m1,m2]*muZhat/psi2_denom - psi1_2*(Z1mu+Z2mu)/psi1_denom)
+ *                 dmu[n,q] += dpsicov_local*(-2.*psi2n*muZhat/psi2_denom - psi1_2*(Z1mu+Z2mu)/psi1_denom)
  */
         __pyx_v_Z2mu2_denom = ((__pyx_v_Z2mu * __pyx_v_Z2mu) / __pyx_v_psi1_denom);
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":193
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":194
  *                 Z2mu2_denom = Z2mu*Z2mu/psi1_denom
  * 
- *                 dmu[n,q] += dpsicov_local*(-2.*psi2[n,m1,m2]*muZhat/psi2_denom - psi1_2*(Z1mu+Z2mu)/psi1_denom)             # <<<<<<<<<<<<<<
- *                 dS[n,q] += dpsicov_local*(psi2[n,m1,m2]*(2.*muZhat2_denom-1.)/psi2_denom - psi1_2*(Z1mu2_denom+Z2mu2_denom-2.)/(2.*psi1_denom))
+ *                 dmu[n,q] += dpsicov_local*(-2.*psi2n*muZhat/psi2_denom - psi1_2*(Z1mu+Z2mu)/psi1_denom)             # <<<<<<<<<<<<<<
+ *                 dS[n,q] += dpsicov_local*(psi2n*(2.*muZhat2_denom-1.)/psi2_denom - psi1_2*(Z1mu2_denom+Z2mu2_denom-2.)/(2.*psi1_denom))
  *                 dl2[q] += dpsicov_local*(psi2[n,m1,m2]*((Snq/l2q+muZhat2_denom)/psi2_denom+Z1Z2*Z1Z2/(4.*l2q*l2q))  \
  */
-        __pyx_t_41 = __pyx_v_n;
-        __pyx_t_42 = __pyx_v_m1;
-        __pyx_t_43 = __pyx_v_m2;
         __pyx_t_44 = __pyx_v_n;
         __pyx_t_45 = __pyx_v_q;
-        *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dmu.data + __pyx_t_44 * __pyx_v_dmu.strides[0]) ) + __pyx_t_45 * __pyx_v_dmu.strides[1]) )) += (__pyx_v_dpsicov_local * ((((-2. * (*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_41 * __pyx_v_psi2.strides[0]) ) + __pyx_t_42 * __pyx_v_psi2.strides[1]) ) + __pyx_t_43 * __pyx_v_psi2.strides[2]) )))) * __pyx_v_muZhat) / __pyx_v_psi2_denom) - ((__pyx_v_psi1_2 * (__pyx_v_Z1mu + __pyx_v_Z2mu)) / __pyx_v_psi1_denom)));
+        *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dmu.data + __pyx_t_44 * __pyx_v_dmu.strides[0]) ) + __pyx_t_45 * __pyx_v_dmu.strides[1]) )) += (__pyx_v_dpsicov_local * ((((-2. * __pyx_v_psi2n) * __pyx_v_muZhat) / __pyx_v_psi2_denom) - ((__pyx_v_psi1_2 * (__pyx_v_Z1mu + __pyx_v_Z2mu)) / __pyx_v_psi1_denom)));
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":194
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":195
  * 
- *                 dmu[n,q] += dpsicov_local*(-2.*psi2[n,m1,m2]*muZhat/psi2_denom - psi1_2*(Z1mu+Z2mu)/psi1_denom)
- *                 dS[n,q] += dpsicov_local*(psi2[n,m1,m2]*(2.*muZhat2_denom-1.)/psi2_denom - psi1_2*(Z1mu2_denom+Z2mu2_denom-2.)/(2.*psi1_denom))             # <<<<<<<<<<<<<<
+ *                 dmu[n,q] += dpsicov_local*(-2.*psi2n*muZhat/psi2_denom - psi1_2*(Z1mu+Z2mu)/psi1_denom)
+ *                 dS[n,q] += dpsicov_local*(psi2n*(2.*muZhat2_denom-1.)/psi2_denom - psi1_2*(Z1mu2_denom+Z2mu2_denom-2.)/(2.*psi1_denom))             # <<<<<<<<<<<<<<
  *                 dl2[q] += dpsicov_local*(psi2[n,m1,m2]*((Snq/l2q+muZhat2_denom)/psi2_denom+Z1Z2*Z1Z2/(4.*l2q*l2q))  \
  *                             - psi1_2*(Z1mu2_denom+Z2mu2_denom+2.*Snq/l2q)/(2.*psi1_denom))
  */
         __pyx_t_46 = __pyx_v_n;
-        __pyx_t_47 = __pyx_v_m1;
-        __pyx_t_48 = __pyx_v_m2;
-        __pyx_t_49 = __pyx_v_n;
-        __pyx_t_50 = __pyx_v_q;
-        *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dS.data + __pyx_t_49 * __pyx_v_dS.strides[0]) ) + __pyx_t_50 * __pyx_v_dS.strides[1]) )) += (__pyx_v_dpsicov_local * ((((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_46 * __pyx_v_psi2.strides[0]) ) + __pyx_t_47 * __pyx_v_psi2.strides[1]) ) + __pyx_t_48 * __pyx_v_psi2.strides[2]) ))) * ((2. * __pyx_v_muZhat2_denom) - 1.)) / __pyx_v_psi2_denom) - ((__pyx_v_psi1_2 * ((__pyx_v_Z1mu2_denom + __pyx_v_Z2mu2_denom) - 2.)) / (2. * __pyx_v_psi1_denom))));
+        __pyx_t_47 = __pyx_v_q;
+        *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dS.data + __pyx_t_46 * __pyx_v_dS.strides[0]) ) + __pyx_t_47 * __pyx_v_dS.strides[1]) )) += (__pyx_v_dpsicov_local * (((__pyx_v_psi2n * ((2. * __pyx_v_muZhat2_denom) - 1.)) / __pyx_v_psi2_denom) - ((__pyx_v_psi1_2 * ((__pyx_v_Z1mu2_denom + __pyx_v_Z2mu2_denom) - 2.)) / (2. * __pyx_v_psi1_denom))));
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":195
- *                 dmu[n,q] += dpsicov_local*(-2.*psi2[n,m1,m2]*muZhat/psi2_denom - psi1_2*(Z1mu+Z2mu)/psi1_denom)
- *                 dS[n,q] += dpsicov_local*(psi2[n,m1,m2]*(2.*muZhat2_denom-1.)/psi2_denom - psi1_2*(Z1mu2_denom+Z2mu2_denom-2.)/(2.*psi1_denom))
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":196
+ *                 dmu[n,q] += dpsicov_local*(-2.*psi2n*muZhat/psi2_denom - psi1_2*(Z1mu+Z2mu)/psi1_denom)
+ *                 dS[n,q] += dpsicov_local*(psi2n*(2.*muZhat2_denom-1.)/psi2_denom - psi1_2*(Z1mu2_denom+Z2mu2_denom-2.)/(2.*psi1_denom))
  *                 dl2[q] += dpsicov_local*(psi2[n,m1,m2]*((Snq/l2q+muZhat2_denom)/psi2_denom+Z1Z2*Z1Z2/(4.*l2q*l2q))  \             # <<<<<<<<<<<<<<
  *                             - psi1_2*(Z1mu2_denom+Z2mu2_denom+2.*Snq/l2q)/(2.*psi1_denom))
  *                 dZ[m1,q] += dpsicov_local*(psi2[n,m1,m2]*(muZhat/psi2_denom-Z1Z2/(2*l2q)) + psi1_2*Z1mu/psi1_denom)
  */
-        __pyx_t_51 = __pyx_v_n;
-        __pyx_t_52 = __pyx_v_m1;
-        __pyx_t_53 = __pyx_v_m2;
+        __pyx_t_48 = __pyx_v_n;
+        __pyx_t_49 = __pyx_v_m1;
+        __pyx_t_50 = __pyx_v_m2;
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":196
- *                 dS[n,q] += dpsicov_local*(psi2[n,m1,m2]*(2.*muZhat2_denom-1.)/psi2_denom - psi1_2*(Z1mu2_denom+Z2mu2_denom-2.)/(2.*psi1_denom))
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":197
+ *                 dS[n,q] += dpsicov_local*(psi2n*(2.*muZhat2_denom-1.)/psi2_denom - psi1_2*(Z1mu2_denom+Z2mu2_denom-2.)/(2.*psi1_denom))
  *                 dl2[q] += dpsicov_local*(psi2[n,m1,m2]*((Snq/l2q+muZhat2_denom)/psi2_denom+Z1Z2*Z1Z2/(4.*l2q*l2q))  \
  *                             - psi1_2*(Z1mu2_denom+Z2mu2_denom+2.*Snq/l2q)/(2.*psi1_denom))             # <<<<<<<<<<<<<<
  *                 dZ[m1,q] += dpsicov_local*(psi2[n,m1,m2]*(muZhat/psi2_denom-Z1Z2/(2*l2q)) + psi1_2*Z1mu/psi1_denom)
  *                 dZ[m2,q] += dpsicov_local*(psi2[n,m1,m2]*(muZhat/psi2_denom+Z1Z2/(2*l2q)) + psi1_2*Z2mu/psi1_denom)
  */
-        __pyx_t_54 = __pyx_v_q;
-        *((double *) ( /* dim=0 */ (__pyx_v_dl2.data + __pyx_t_54 * __pyx_v_dl2.strides[0]) )) += (__pyx_v_dpsicov_local * (((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_51 * __pyx_v_psi2.strides[0]) ) + __pyx_t_52 * __pyx_v_psi2.strides[1]) ) + __pyx_t_53 * __pyx_v_psi2.strides[2]) ))) * ((((__pyx_v_Snq / __pyx_v_l2q) + __pyx_v_muZhat2_denom) / __pyx_v_psi2_denom) + ((__pyx_v_Z1Z2 * __pyx_v_Z1Z2) / ((4. * __pyx_v_l2q) * __pyx_v_l2q)))) - ((__pyx_v_psi1_2 * ((__pyx_v_Z1mu2_denom + __pyx_v_Z2mu2_denom) + ((2. * __pyx_v_Snq) / __pyx_v_l2q))) / (2. * __pyx_v_psi1_denom))));
+        __pyx_t_51 = __pyx_v_q;
+        *((double *) ( /* dim=0 */ (__pyx_v_dl2.data + __pyx_t_51 * __pyx_v_dl2.strides[0]) )) += (__pyx_v_dpsicov_local * (((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_48 * __pyx_v_psi2.strides[0]) ) + __pyx_t_49 * __pyx_v_psi2.strides[1]) ) + __pyx_t_50 * __pyx_v_psi2.strides[2]) ))) * ((((__pyx_v_Snq / __pyx_v_l2q) + __pyx_v_muZhat2_denom) / __pyx_v_psi2_denom) + ((__pyx_v_Z1Z2 * __pyx_v_Z1Z2) / ((4. * __pyx_v_l2q) * __pyx_v_l2q)))) - ((__pyx_v_psi1_2 * ((__pyx_v_Z1mu2_denom + __pyx_v_Z2mu2_denom) + ((2. * __pyx_v_Snq) / __pyx_v_l2q))) / (2. * __pyx_v_psi1_denom))));
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":197
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":198
  *                 dl2[q] += dpsicov_local*(psi2[n,m1,m2]*((Snq/l2q+muZhat2_denom)/psi2_denom+Z1Z2*Z1Z2/(4.*l2q*l2q))  \
  *                             - psi1_2*(Z1mu2_denom+Z2mu2_denom+2.*Snq/l2q)/(2.*psi1_denom))
  *                 dZ[m1,q] += dpsicov_local*(psi2[n,m1,m2]*(muZhat/psi2_denom-Z1Z2/(2*l2q)) + psi1_2*Z1mu/psi1_denom)             # <<<<<<<<<<<<<<
  *                 dZ[m2,q] += dpsicov_local*(psi2[n,m1,m2]*(muZhat/psi2_denom+Z1Z2/(2*l2q)) + psi1_2*Z2mu/psi1_denom)
  */
-        __pyx_t_55 = __pyx_v_n;
-        __pyx_t_56 = __pyx_v_m1;
-        __pyx_t_57 = __pyx_v_m2;
-        __pyx_t_58 = __pyx_v_m1;
-        __pyx_t_59 = __pyx_v_q;
-        *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dZ.data + __pyx_t_58 * __pyx_v_dZ.strides[0]) ) + __pyx_t_59 * __pyx_v_dZ.strides[1]) )) += (__pyx_v_dpsicov_local * (((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_55 * __pyx_v_psi2.strides[0]) ) + __pyx_t_56 * __pyx_v_psi2.strides[1]) ) + __pyx_t_57 * __pyx_v_psi2.strides[2]) ))) * ((__pyx_v_muZhat / __pyx_v_psi2_denom) - (__pyx_v_Z1Z2 / (2.0 * __pyx_v_l2q)))) + ((__pyx_v_psi1_2 * __pyx_v_Z1mu) / __pyx_v_psi1_denom)));
+        __pyx_t_52 = __pyx_v_n;
+        __pyx_t_53 = __pyx_v_m1;
+        __pyx_t_54 = __pyx_v_m2;
+        __pyx_t_55 = __pyx_v_m1;
+        __pyx_t_56 = __pyx_v_q;
+        *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dZ.data + __pyx_t_55 * __pyx_v_dZ.strides[0]) ) + __pyx_t_56 * __pyx_v_dZ.strides[1]) )) += (__pyx_v_dpsicov_local * (((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_52 * __pyx_v_psi2.strides[0]) ) + __pyx_t_53 * __pyx_v_psi2.strides[1]) ) + __pyx_t_54 * __pyx_v_psi2.strides[2]) ))) * ((__pyx_v_muZhat / __pyx_v_psi2_denom) - (__pyx_v_Z1Z2 / (2.0 * __pyx_v_l2q)))) + ((__pyx_v_psi1_2 * __pyx_v_Z1mu) / __pyx_v_psi1_denom)));
 
-        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":198
+        /* "GPy/kern/src/psi_comp/rbf_cython.pyx":199
  *                             - psi1_2*(Z1mu2_denom+Z2mu2_denom+2.*Snq/l2q)/(2.*psi1_denom))
  *                 dZ[m1,q] += dpsicov_local*(psi2[n,m1,m2]*(muZhat/psi2_denom-Z1Z2/(2*l2q)) + psi1_2*Z1mu/psi1_denom)
  *                 dZ[m2,q] += dpsicov_local*(psi2[n,m1,m2]*(muZhat/psi2_denom+Z1Z2/(2*l2q)) + psi1_2*Z2mu/psi1_denom)             # <<<<<<<<<<<<<<
  */
-        __pyx_t_60 = __pyx_v_n;
-        __pyx_t_61 = __pyx_v_m1;
-        __pyx_t_62 = __pyx_v_m2;
-        __pyx_t_63 = __pyx_v_m2;
-        __pyx_t_64 = __pyx_v_q;
-        *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dZ.data + __pyx_t_63 * __pyx_v_dZ.strides[0]) ) + __pyx_t_64 * __pyx_v_dZ.strides[1]) )) += (__pyx_v_dpsicov_local * (((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_60 * __pyx_v_psi2.strides[0]) ) + __pyx_t_61 * __pyx_v_psi2.strides[1]) ) + __pyx_t_62 * __pyx_v_psi2.strides[2]) ))) * ((__pyx_v_muZhat / __pyx_v_psi2_denom) + (__pyx_v_Z1Z2 / (2.0 * __pyx_v_l2q)))) + ((__pyx_v_psi1_2 * __pyx_v_Z2mu) / __pyx_v_psi1_denom)));
+        __pyx_t_57 = __pyx_v_n;
+        __pyx_t_58 = __pyx_v_m1;
+        __pyx_t_59 = __pyx_v_m2;
+        __pyx_t_60 = __pyx_v_m2;
+        __pyx_t_61 = __pyx_v_q;
+        *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dZ.data + __pyx_t_60 * __pyx_v_dZ.strides[0]) ) + __pyx_t_61 * __pyx_v_dZ.strides[1]) )) += (__pyx_v_dpsicov_local * (((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_57 * __pyx_v_psi2.strides[0]) ) + __pyx_t_58 * __pyx_v_psi2.strides[1]) ) + __pyx_t_59 * __pyx_v_psi2.strides[2]) ))) * ((__pyx_v_muZhat / __pyx_v_psi2_denom) + (__pyx_v_Z1Z2 / (2.0 * __pyx_v_l2q)))) + ((__pyx_v_psi1_2 * __pyx_v_Z2mu) / __pyx_v_psi1_denom)));
       }
     }
   }
@@ -19309,6 +19315,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_psi2, __pyx_k_psi2, sizeof(__pyx_k_psi2), 0, 0, 1, 1},
   {&__pyx_n_s_psi2_denom, __pyx_k_psi2_denom, sizeof(__pyx_k_psi2_denom), 0, 0, 1, 1},
   {&__pyx_n_s_psi2_local, __pyx_k_psi2_local, sizeof(__pyx_k_psi2_local), 0, 0, 1, 1},
+  {&__pyx_n_s_psi2n, __pyx_k_psi2n, sizeof(__pyx_k_psi2n), 0, 0, 1, 1},
   {&__pyx_n_s_psicov, __pyx_k_psicov, sizeof(__pyx_k_psicov), 0, 0, 1, 1},
   {&__pyx_n_s_psicov_local, __pyx_k_psicov_local, sizeof(__pyx_k_psicov_local), 0, 0, 1, 1},
   {&__pyx_n_s_pyx_getbuffer, __pyx_k_pyx_getbuffer, sizeof(__pyx_k_pyx_getbuffer), 0, 0, 1, 1},
@@ -19645,10 +19652,10 @@ static int __Pyx_InitCachedConstants(void) {
  *                     double [:] dl2, double [:,:] dmu, double [:,:] dS, double [:,:] dZ):
  *     cdef int N = psi1.shape[0]
  */
-  __pyx_tuple__32 = PyTuple_Pack(33, __pyx_n_s_dpsicov, __pyx_n_s_psi1, __pyx_n_s_psi2, __pyx_n_s_l2, __pyx_n_s_Z, __pyx_n_s_mu, __pyx_n_s_S, __pyx_n_s_dl2, __pyx_n_s_dmu, __pyx_n_s_dS, __pyx_n_s_dZ, __pyx_n_s_N, __pyx_n_s_M, __pyx_n_s_Q, __pyx_n_s_M2, __pyx_n_s_m1, __pyx_n_s_m2, __pyx_n_s_n, __pyx_n_s_m_idx, __pyx_n_s_q, __pyx_n_s_dpsicov_local, __pyx_n_s_Snq, __pyx_n_s_l2q, __pyx_n_s_Z1Z2, __pyx_n_s_muZhat, __pyx_n_s_psi2_denom, __pyx_n_s_muZhat2_denom, __pyx_n_s_Z1mu, __pyx_n_s_Z2mu, __pyx_n_s_psi1_denom, __pyx_n_s_Z1mu2_denom, __pyx_n_s_Z2mu2_denom, __pyx_n_s_psi1_2); if (unlikely(!__pyx_tuple__32)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_tuple__32 = PyTuple_Pack(34, __pyx_n_s_dpsicov, __pyx_n_s_psi1, __pyx_n_s_psi2, __pyx_n_s_l2, __pyx_n_s_Z, __pyx_n_s_mu, __pyx_n_s_S, __pyx_n_s_dl2, __pyx_n_s_dmu, __pyx_n_s_dS, __pyx_n_s_dZ, __pyx_n_s_N, __pyx_n_s_M, __pyx_n_s_Q, __pyx_n_s_M2, __pyx_n_s_m1, __pyx_n_s_m2, __pyx_n_s_n, __pyx_n_s_m_idx, __pyx_n_s_q, __pyx_n_s_dpsicov_local, __pyx_n_s_Snq, __pyx_n_s_l2q, __pyx_n_s_Z1Z2, __pyx_n_s_muZhat, __pyx_n_s_psi2_denom, __pyx_n_s_muZhat2_denom, __pyx_n_s_Z1mu, __pyx_n_s_Z2mu, __pyx_n_s_psi1_denom, __pyx_n_s_Z1mu2_denom, __pyx_n_s_Z2mu2_denom, __pyx_n_s_psi1_2, __pyx_n_s_psi2n); if (unlikely(!__pyx_tuple__32)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__32);
   __Pyx_GIVEREF(__pyx_tuple__32);
-  __pyx_codeobj__33 = (PyObject*)__Pyx_PyCode_New(11, 0, 33, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__32, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_zhenwen_workspace_codes_GP, __pyx_n_s_update_psicovn_der, 165, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__33)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_codeobj__33 = (PyObject*)__Pyx_PyCode_New(11, 0, 34, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__32, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_zhenwen_workspace_codes_GP, __pyx_n_s_update_psicovn_der, 165, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__33)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
   /* "View.MemoryView":278
  *         return self.name

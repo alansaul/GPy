@@ -26,7 +26,7 @@ class PSICOMP_RBF_Cython(PSICOMP_RBF):
     def get_dimensions(self, Z, variational_posterior):
         return variational_posterior.mean.shape[0], Z.shape[0], Z.shape[1]
 
-    #@Cache_this(limit=10, ignore_args=(0,))
+    @Cache_this(limit=10, ignore_args=(0,))
     def psicomputations(self, kern, Z, variational_posterior, return_psicov=False, return_n=False):
         from .rbf_cython import comp_logpsi1, comp_logpsi2, comp_psicov, comp_psicovn
 
@@ -64,13 +64,14 @@ class PSICOMP_RBF_Cython(PSICOMP_RBF):
             np.exp(psi1, psi1)
             psi1 *= variance
             np.exp(psi2, psi2)
-            if not return_n: 
-                psi2 = variance*variance*psi2.sum(axis=0)
+            if not return_n:
+                psi2 *= variance*variance
+                psi2 = psi2.sum(axis=0)
             else:
                 psi2 *= variance*variance
             return psi0, psi1, psi2        
 
-    #@Cache_this(limit=10, ignore_args=(0,2,3,4))
+    @Cache_this(limit=10, ignore_args=(0,2,3,4))
     def psiDerivativecomputations_psicov(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
         from .rbf_cython import update_psi1_der, update_psicov_der, update_psicovn_der
         variance, lengthscale = float(kern.variance), kern.lengthscale
