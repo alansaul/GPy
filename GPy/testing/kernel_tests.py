@@ -610,9 +610,9 @@ class Kernel_Psi_statistics_psicov_GradientTests(unittest.TestCase):
             self._test_kernel_param(k)
             self._test_Z(k)
             self._test_qX(k)
-#             self._test_kernel_param(k, psi2n=True)
-#             self._test_Z(k, psi2n=True)
-#             self._test_qX(k, psi2n=True)
+            self._test_kernel_param(k, psi2n=True)
+            self._test_Z(k, psi2n=True)
+            self._test_qX(k, psi2n=True)
             
     def _test_kernel_param(self, kernel, psi2n=False):
 
@@ -654,6 +654,7 @@ class Kernel_Psi_statistics_psicov_GradientTests(unittest.TestCase):
         from GPy.models import GradientChecker
         f(self.Z.copy())
         m = GradientChecker(f, df, self.Z.copy())
+        m.checkgrad(verbose=1)
         self.assertTrue(m.checkgrad())
 
     def _test_qX(self, kernel, psi2n=False):
