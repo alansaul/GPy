@@ -313,6 +313,11 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k = GPy.kern.RBF(self.D, ARD=True)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+        
+    def test_AddRBF(self):
+        k = GPy.kern.AdditiveRBF(self.D, ARD=True, sep_var=True)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
     def test_Linear(self):
         k = GPy.kern.Linear(self.D)
