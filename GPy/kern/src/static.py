@@ -6,6 +6,7 @@ from .kern import Kern
 import numpy as np
 from ...core.parameterization import Param
 from paramz.transformations import Logexp
+from ...util.linalg import tdot
 
 class Static(Kern):
     def __init__(self, input_dim, variance, active_dims, name):
@@ -45,7 +46,11 @@ class Static(Kern):
 
     def psi2(self, Z, variational_posterior):
         K = self.K(variational_posterior.mean, Z)
-        return np.einsum('ij,ik->jk',K,K) #K[:,:,None]*K[:,None,:] # NB. more efficient implementations on inherriting classes
+        return tdot(K.T)
+
+    def psi2n(self, Z, variational_posterior):
+        K = self.K(variational_posterior.mean, Z)
+        return K[:,:,None]*K[:,None,:]
 
     def input_sensitivity(self, summarize=True):
         if summarize:
