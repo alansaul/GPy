@@ -58,6 +58,22 @@ class Static(Kern):
         else:
             return np.ones(self.input_dim) * self.variance
 
+    def psicov(self, Z, variational_posterior):
+        return np.zeros(Z.shape[0],Z.shape[0])
+
+    def psicovn(self, Z, variational_posterior):
+        return np.zeros(variational_posterior.shape[0],Z.shape[0],Z.shape[0])
+
+
+    def update_gradients_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        pass
+
+    def gradients_Z_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        return np.zeros(Z.shape)
+
+    def gradients_qX_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        return np.zeros(variational_posterior.shape), np.zeros(variational_posterior.shape)
+
 class White(Static):
     def __init__(self, input_dim, variance=1., active_dims=None, name='white'):
         super(White, self).__init__(input_dim, variance, active_dims, name)
@@ -83,8 +99,12 @@ class White(Static):
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = dL_dKdiag.sum()
 
-    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum()
+
+    def update_gradients_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        self.update_gradients_expectations(dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)
+
 
 class Bias(Static):
     def __init__(self, input_dim, variance=1., active_dims=None, name='bias'):
@@ -112,13 +132,16 @@ class Bias(Static):
         ret[:] = self.variance*self.variance
         return ret
 
-    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         if dL_dpsi2.ndim == 2:
             self.variance.gradient = (dL_dpsi0.sum() + dL_dpsi1.sum()
                                     + 2.*self.variance*dL_dpsi2.sum()*variational_posterior.shape[0])
         else:
             self.variance.gradient = (dL_dpsi0.sum() + dL_dpsi1.sum()
                                     + 2.*self.variance*dL_dpsi2.sum())
+
+    def update_gradients_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        self.variance.gradient = (dL_dpsi0.sum() + dL_dpsi1.sum())
 
 class Fixed(Static):
     def __init__(self, input_dim, covariance_matrix, variance=1., active_dims=None, name='fixed'):
@@ -148,6 +171,9 @@ class Fixed(Static):
     def psi2n(self, Z, variational_posterior):
         return np.zeros((1, Z.shape[0], Z.shape[0]), dtype=np.float64)
 
-    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum()
+
+    def update_gradients_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        self.update_gradients_expectations(dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)
 

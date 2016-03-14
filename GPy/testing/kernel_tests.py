@@ -607,8 +607,8 @@ class Kernel_Psi_statistics_psicov_GradientTests(unittest.TestCase):
         from GPy.kern import RBF,Linear,MLP,Bias,White
         from GPy.kern.src.psi_comp import PSICOMP_RBF_Cython
         Q = self.Z.shape[1]
-        kernels = [RBF(Q,ARD=True),RBF(Q,ARD=False),]
-        for k in kernels: k.psicomp = PSICOMP_RBF_Cython()
+        kernels = [RBF(Q,ARD=True, psicov=True),RBF(Q,ARD=False, psicov=True),RBF(Q,ARD=True, psicov=True)+Bias(Q)+White(Q)]
+        # for k in kernels: k.psicomp = PSICOMP_RBF_Cython()
 
         for k in kernels:
             k.randomize()

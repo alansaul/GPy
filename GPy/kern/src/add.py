@@ -180,7 +180,7 @@ class Add(CombinationKernel):
                 raise NotImplementedError("psi2 cannot be computed for this kernel")
         return psi2
 
-    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
+    def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         tmp = dL_dpsi2.sum(0)+ dL_dpsi2.sum(1) if len(dL_dpsi2.shape)==2 else dL_dpsi2.sum(2)+ dL_dpsi2.sum(1)
         
         if not self._exact_psicomp: return Kern.update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)
@@ -199,7 +199,7 @@ class Add(CombinationKernel):
                     eff_dL_dpsi1 += tmp * p2.psi1(Z, variational_posterior) 
             p1.update_gradients_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
 
-    def gradients_Z_expectations(self, dL_psi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
+    def gradients_Z_expectations(self, dL_psi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         tmp = dL_dpsi2.sum(0)+ dL_dpsi2.sum(1) if len(dL_dpsi2.shape)==2 else dL_dpsi2.sum(2)+ dL_dpsi2.sum(1)
         if not self._exact_psicomp: return Kern.gradients_Z_expectations(self, dL_psi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         from .static import White, Bias
@@ -219,7 +219,7 @@ class Add(CombinationKernel):
             target += p1.gradients_Z_expectations(dL_psi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
         return target
 
-    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         tmp = dL_dpsi2.sum(0)+ dL_dpsi2.sum(1) if len(dL_dpsi2.shape)==2 else dL_dpsi2.sum(2)+ dL_dpsi2.sum(1)
         
         if not self._exact_psicomp: return Kern.gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior)
@@ -238,6 +238,41 @@ class Add(CombinationKernel):
                 else:
                     eff_dL_dpsi1 += tmp * p2.psi1(Z, variational_posterior) 
             grads = p1.gradients_qX_expectations(dL_dpsi0, eff_dL_dpsi1, dL_dpsi2, Z, variational_posterior)
+            [np.add(target_grads[i],grads[i],target_grads[i]) for i in range(len(grads))]
+        return target_grads
+
+    @Cache_this(limit=1, force_kwargs=['which_parts'])
+    def psicov(self, Z, variational_posterior):
+        from .static import Static
+        psicov = reduce(np.add, (p.psicov(Z, variational_posterior) for p in self.parts if not isinstance(p, Static)))
+        return psicov
+
+    @Cache_this(limit=1, force_kwargs=['which_parts'])
+    def psicovn(self, Z, variational_posterior):
+        from .static import Static
+        psicovn = reduce(np.add, (p.psicovn(Z, variational_posterior) for p in self.parts if not isinstance(p, Static)))
+        return psicovn
+
+    def update_gradients_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        
+        from .static import Static
+        for p in self.parts:
+            p.update_gradients_expectations_psicov(dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)
+
+    def gradients_Z_expectations_psicov(self, dL_psi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        from .static import Static
+        target = np.zeros(Z.shape)
+        for p in self.parts:
+            if isinstance(p, Static): continue
+            target += p.gradients_Z_expectations_psicov(dL_psi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)
+        return target
+
+    def gradients_qX_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        from .static import Static
+        target_grads = [np.zeros(v.shape) for v in variational_posterior.parameters]
+        for p in self.parameters:
+            if isinstance(p, Static): continue
+            grads = p.gradients_qX_expectations_psicov(dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)
             [np.add(target_grads[i],grads[i],target_grads[i]) for i in range(len(grads))]
         return target_grads
 
