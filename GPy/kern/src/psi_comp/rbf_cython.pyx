@@ -146,8 +146,8 @@ def update_psicov_der(double [:,:] dpsicov, double [:,:] psi1, double [:,:,:] ps
         mu_nq = mu[n,q]
         Snq = S[n,q]
         l2q = l2[q]
-        psi2_denom = 2.*S[n,q]+l2[q]
-        psi1_denom = S[n,q] + l2[q]
+        psi2_denom = 2.*Snq+l2q
+        psi1_denom = Snq + l2q
         Snq_l2q = Snq/l2q
  
         dmu_nq = 0.
@@ -236,8 +236,8 @@ def update_psicovn_der(double [:,:,:] dpsicov, double [:,:] psi1, double [:,:,:]
         mu_nq = mu[n,q]
         Snq = S[n,q]
         l2q = l2[q]
-        psi2_denom = 2.*S[n,q]+l2[q]
-        psi1_denom = S[n,q] + l2[q]
+        psi2_denom = 2.*Snq+l2q
+        psi1_denom = Snq + l2q
         Snq_l2q = Snq/l2q
  
         dmu_nq = 0.

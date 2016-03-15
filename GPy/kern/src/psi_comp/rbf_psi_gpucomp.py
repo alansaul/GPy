@@ -66,7 +66,7 @@ gpu_code = """
         }
     }
 
-    __global__ void psi1computations(double *psi1, double *log_denom1, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
+    __global__ void psi1computations(double *psi1, double *log_denom1, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
     {
         int m_start, m_end;
         divide_data(M, gridDim.x, blockIdx.x, &m_start, &m_end);
@@ -80,22 +80,20 @@ gpu_code = """
                     double lq = l[q]*l[q];
                     log_psi1 += (muZ*muZ/(Snq+lq)+log_denom1[IDX_NQ(n,q)])/(-2.);
                 }
-                psi1[IDX_NM(n,m)] = var*exp(log_psi1);
+                psi1[IDX_NM(n,m)] = log_psi1;
             }
         }
     }
     
-    __global__ void psi2computations(double *psi2, double *psi2n, double *log_denom2, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
+    __global__ void psi2computations(double *psi2, double *psi2n, double *log_denom2, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
     {
         int psi2_idx_start, psi2_idx_end;
-        __shared__ double psi2_local[THREADNUM];
         divide_data((M+1)*M/2, gridDim.x, blockIdx.x, &psi2_idx_start, &psi2_idx_end);
         
         for(int psi2_idx=psi2_idx_start; psi2_idx<psi2_idx_end; psi2_idx++) {
             int m1 = int((sqrt(8.*psi2_idx+1.)-1.)/2.);
             int m2 = psi2_idx - (m1+1)*m1/2;
             
-            psi2_local[threadIdx.x] = 0;
             for(int n=threadIdx.x;n<N;n+=blockDim.x) {
                 double log_psi2_n = 0;
                 for(int q=0;q<Q;q++) {
@@ -105,21 +103,77 @@ gpu_code = """
                     double lq = l[q]*l[q];
                     log_psi2_n += dZ*dZ/(-4.*lq)-muZhat*muZhat/(2.*Snq+lq) + log_denom2[IDX_NQ(n,q)]/(-2.);
                 }
-                double exp_psi2_n = exp(log_psi2_n);
-                psi2n[IDX_NMM(n,m1,m2)] = var*var*exp_psi2_n;
-                if(m1!=m2) { psi2n[IDX_NMM(n,m2,m1)] = var*var*exp_psi2_n;}
-                psi2_local[threadIdx.x] += exp_psi2_n;
+                double exp_psi2_n = log_psi2_n;
+                psi2n[IDX_NMM(n,m1,m2)] = exp_psi2_n;
+                if(m1!=m2) { psi2n[IDX_NMM(n,m2,m1)] = exp_psi2_n;}
+            }
+        }
+    }
+
+    __global__ void comp_psicov(double *psi1, double *psi2n, double *psicov, double var, int N, int M, int Q)
+    {
+        int psi2_idx_start, psi2_idx_end;
+        __shared__ double psicov_local[THREADNUM];
+        divide_data((M+1)*M/2, gridDim.x, blockIdx.x, &psi2_idx_start, &psi2_idx_end);
+        
+        for(int psi2_idx=psi2_idx_start; psi2_idx<psi2_idx_end; psi2_idx++) {
+            int m1 = int((sqrt(8.*psi2_idx+1.)-1.)/2.);
+            int m2 = psi2_idx - (m1+1)*m1/2;
+            
+            psicov_local[threadIdx.x] = 0;
+            for(int n=threadIdx.x;n<N;n+=blockDim.x) {
+                double psicov_n;
+                double psi2_local = psi2n[IDX_NMM(n,m1,m2)];
+                double psi1_local = psi1[IDX_NM(n,m1)] + psi1[IDX_NM(n,m2)];
+
+                double exp_psi2_local = exp(psi2_local);
+                if(psi2_local>psi1_local) {
+                    psicov_n = -exp_psi2_local*expm1(psi1_local - psi2_local);
+                } else {
+                    psicov_n = exp(psi1_local) * expm1(psi2_local - psi1_local);
+                }
+                psi2n[IDX_NMM(n,m1,m2)] = exp_psi2_local;
+                if(m1!=m2) {psi2n[IDX_NMM(n,m2,m1)] = exp_psi2_local;}
+                psicov_local[threadIdx.x] += psicov_n;
             }
             __syncthreads();
-            reduce_sum(psi2_local, THREADNUM);
+            reduce_sum(psicov_local, THREADNUM);
             if(threadIdx.x==0) {
-                psi2[IDX_MM(m1,m2)] = var*var*psi2_local[0];
-                if(m1!=m2) { psi2[IDX_MM(m2,m1)] = var*var*psi2_local[0]; }
+                psi2[IDX_MM(m1,m2)] = var*var*psicov_local[0];
+                if(m1!=m2) { psi2[IDX_MM(m2,m1)] = var*var*psicov_local[0]; }
             }
             __syncthreads();
         }
     }
-    
+
+    __global__ void comp_psicovn(double *psi1, double *psi2n, double *psicov, double var, int N, int M, int Q)
+    {
+        int psi2_idx_start, psi2_idx_end;
+        divide_data((M+1)*M/2, gridDim.x, blockIdx.x, &psi2_idx_start, &psi2_idx_end);
+        
+        for(int psi2_idx=psi2_idx_start; psi2_idx<psi2_idx_end; psi2_idx++) {
+            int m1 = int((sqrt(8.*psi2_idx+1.)-1.)/2.);
+            int m2 = psi2_idx - (m1+1)*m1/2;
+            
+            for(int n=threadIdx.x;n<N;n+=blockDim.x) {
+                double psicov_n;
+                double psi2_local = psi2n[IDX_NMM(n,m1,m2)];
+                double psi1_local = psi1[IDX_NM(n,m1)] + psi1[IDX_NM(n,m2)];
+
+                double exp_psi2_local = exp(psi2_local);
+                if(psi2_local>psi1_local) {
+                    psicov_n = -exp_psi2_local*expm1(psi1_local - psi2_local);
+                } else {
+                    psicov_n = exp(psi1_local) * expm1(psi2_local - psi1_local);
+                }
+                psi2n[IDX_NMM(n,m1,m2)] = exp_psi2_local;
+                if(m1!=m2) {psi2n[IDX_NMM(n,m2,m1)] = exp_psi2_local;}
+                psicov[IDX_NMM(n,m1,m2)] = var*var*psicov_n;
+                if(m1!=m2) {psicov[IDX_NMM(n,m2,m1)] = var*var*psicov_n;}
+            }
+        }
+    }
+
     __global__ void psi1compDer(double *dvar, double *dl, double *dZ, double *dmu, double *dS, double *dL_dpsi1, double *psi1, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
     {
         int m_start, m_end;
@@ -172,63 +226,103 @@ gpu_code = """
         reduce_sum(g_local, THREADNUM);
         if(threadIdx.x==0) {dvar[blockIdx.x] += g_local[0]/var;}        
     }
-    
-    __global__ void psi2compDer(double *dvar, double *dl, double *dZ, double *dmu, double *dS, double *dL_dpsi2, double *psi2n, double var, double *l, double *Z, double *mu, double *S, int N, int M, int Q)
-    {
-        int m_start, m_end;
-        __shared__ double g_local[THREADNUM];
-        divide_data(M, gridDim.x, blockIdx.x, &m_start, &m_end);
-        int P = int(ceil(double(N)/THREADNUM));
 
-        double dvar_local = 0;
-        for(int q=0;q<Q;q++) {
-            double lq_sqrt = l[q];
-            double lq = lq_sqrt*lq_sqrt;
-            double dl_local = 0;
-            for(int p=0;p<P;p++) {
-                int n = p*THREADNUM + threadIdx.x;
-                double dmu_local = 0;
-                double dS_local = 0;
-                double Snq,mu_nq;
-                if(n<N) {Snq = S[IDX_NQ(n,q)]; mu_nq=mu[IDX_NQ(n,q)];}
-                for(int m1=m_start; m1<m_end; m1++) {
-                    g_local[threadIdx.x] = 0;
-                    for(int m2=0;m2<M;m2++) {
-                        if(n<N) {
-                            double lpsi2 = psi2n[IDX_NMM(n,m1,m2)]*dL_dpsi2[IDX_MM(m1,m2)];
-                            if(q==0) {dvar_local += lpsi2;}
-                            
-                            double dZ = Z[IDX_MQ(m1,q)] - Z[IDX_MQ(m2,q)];
-                            double muZhat =  mu_nq - (Z[IDX_MQ(m1,q)] + Z[IDX_MQ(m2,q)])/2.;
-                            double denom = 2.*Snq+lq;
-                            double muZhat2_denom = muZhat*muZhat/denom;
-                            
-                            dmu_local += lpsi2*muZhat/denom;
-                            dS_local += lpsi2*(2.*muZhat2_denom-1.)/denom;
-                            dl_local += lpsi2*((Snq/lq+muZhat2_denom)/denom+dZ*dZ/(4.*lq*lq));
-                            g_local[threadIdx.x] += 2.*lpsi2*(muZhat/denom-dZ/(2*lq));
-                        }
+    __global__ void update_psicov_der1(double *dl2_n, double *dmu, double *dS, double *dpsicov, double *psi1, double *psi2n, double *l2, double *Z, double *mu, double *S, int N, int M, int Q)
+    {
+        int n_start, n_end;
+        divide_data(N, gridDim.x, blockIdx.x, &n_start, &n_end);
+        int NQ = (n_end - n_start)*Q;
+        int P = int(ceil(double(NQ)/THREADNUM));
+
+        for(int p=0;p<P;p++) {
+            int idx = p*THREADNUM + threadIdx.x;
+            if(idx>NQ) {break;}
+            int n = idx%Q;
+            int q = idx/Q;
+
+            double mu_nq = mu[IDX_NQ(n,q)];
+            double Snq = S[IDX_NQ(n,q)];
+            double l2q = l2[q];
+            double psi2_denom = 2*Snq + l2q;
+            double psi1_denom = Snq+l2q;
+            double Snq_l2q = Snq/l2q;
+
+            double dmu_nq = 0.;
+            double dS_nq = 0.;
+            double dl2_nq = 0.;
+
+            for(int m1=0;m1<M;m1++) {
+                double Z1 = Z[IDX_MQ(m1,q)];
+                double psi1_1 = psi1[IDX_NM(n,m1)]/psi1_denom;
+                double Z1mu = Z1 - mu_nq;
+
+                for(int m2=0;m2<m1+1;m2++) {
+                    double dpsicov_local;
+                    if(m1!=m2) {
+                        dpsicov_local = dpsicov[IDX_MM(m1,m2)] + dpsicov[IDX_MM(m2,m1)];
+                    } else {
+                        dpsicov_local = dpsicov[IDX_MM(m1,m2)];
                     }
-                    __syncthreads();
-                    reduce_sum(g_local, p<P-1?THREADNUM:N-(P-1)*THREADNUM);
-                    if(threadIdx.x==0) {dZ[IDX_MQ(m1,q)] += g_local[0];}
+                    double Z2 = Z[IDX_MQ(m1,q)];
+                    double psi1_2 = psi1_1*psi1[IDX_NM(n,m2)];
+                    double psi2n_local = psi2n[IDX_NMM(n,m1,m2)];
+                    double Z1Z2 = Z1 - Z2;
+                    double muZhat = mu_nq - (Z1+Z2)/2.;
+                    double muZhat2_denom = muZhat*muZhat/psi2_denom;
+                    double Z2mu = Z2 - mu_nq;
+                    double Z1mu2Z2mu2_denom = (Z1mu*Z1mu+Z2mu*Z2mu)/(2*psi1_denom);
+
+                    dmu_nq += dpsicov_local*(-2*muZhat*(psi2n_local - psi1_2));
+                    dS_nq +=  dpsicov_local*(psi2n_local*(2*muZhat2_denom-1) - psi1_2*(Z1mu2Z2mu2_denom-1));
+                    dl2_nq += dpsicov_local*(psi2n_local*((Snq_l2q+muZhat2_denom)+Z1Z2*Z1Z2*psi2_denom/(4*l2q*l2q))
+                                - psi1_2*(Z1mu2Z2mu2_denom+Snq_l2q));
                 }
-                if(n<N) {
-                    dmu[IDX_NQB(n,q,blockIdx.x)] += -2.*dmu_local;
-                    dS[IDX_NQB(n,q,blockIdx.x)] += dS_local;
-                }
-                __threadfence_block();
             }
-            g_local[threadIdx.x] = dl_local*2.*lq_sqrt;
-            __syncthreads();
-            reduce_sum(g_local, THREADNUM);
-            if(threadIdx.x==0) {dl[IDX_QB(q,blockIdx.x)] += g_local[0];}
+            dmu[IDX_NQ(n,q)] += dmu_nq;
+            dS[IDX_NQ(n,q)] += dS_nq;
+            dl2_n[IDX_NQ(n,q)] += dl2_nq;
         }
-        g_local[threadIdx.x] = dvar_local;
-        __syncthreads();
-        reduce_sum(g_local, THREADNUM);
-        if(threadIdx.x==0) {dvar[blockIdx.x] += g_local[0]*2/var;}
     }
+
+    __global__ void update_psicov_der2(double *dZ, double *dpsicov, double *psi1, double *psi2n, double *l2, double *Z, double *mu, double *S, int N, int M, int Q)
+    {
+        int idx_start, idx_end;
+        divide_data(M*Q, gridDim.x, blockIdx.x, &idx_start, &idx_end);
+        int MQ = (idx_end - idx_start);
+        int P = int(ceil(double(MQ)/THREADNUM));
+
+        for(int p=0;p<P;p++) {
+            int idx = p*THREADNUM + threadIdx.x;
+            if(idx>MQ) {break;}
+            int m1 = idx%Q;
+            int q = idx/Q;
+
+            double dZ_mq = 0.;
+            double Z1 = Z[IDX_MQ(m1,q)];
+            double l2q = l2[q];
+
+            for(int n=0;n<N;n++) {
+                double mu_nq = mu[IDX_NQ(n,q)];
+                double Snq = S[IDX_NQ(n,q)];
+                double psi2_denom = 2*Snq + l2q;
+                double psi1_denom = Snq+l2q;
+                double psi1_1 = psi1[IDX_NM(n,m1)]/psi1_denom;
+                
+                for(int m2;m2<M;m2++) {
+                    double dpsicov_local = dpsicov[IDX_MM(m1,m2)] + dpsicov[IDX_MM(m2,m1)];
+                    double Z2 = Z[IDX_MQ(m1,q)];
+                    double psi1_2 = psi1_1*psi1[IDX_NM(n,m2)];
+                    double psi2n_local = psi2n[IDX_NMM(n,m1,m2)];
+                    double Z1Z2 = Z1 - Z2;
+                    double muZhat = mu_nq - (Z1+Z2)/2.;
+                    double Z1mu = Z1 - mu_nq;
+
+                    dZ_mq += dpsicov_local*(psi2n_local*(muZhat/psi2_denom-Z1Z2/(2*l2q)) + psi1_2*Z1mu);
+                }
+            }
+            dZ[IDX_MQ(m1,q)] += dZ_mq;
+        }
+    }    
     """
 
 class PSICOMP_RBF_GPU(PSICOMP_RBF):
@@ -249,10 +343,18 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         self.g_psi1computations.prepare('PPdPPPPiii')
         self.g_psi2computations = module.get_function('psi2computations')
         self.g_psi2computations.prepare('PPPdPPPPiii')
+        self.g_comp_psicov = module.get_function('comp_psicov')
+        self.g_comp_psicov.prepare('PPPdiii')
+        self.g_comp_psicovn = module.get_function('comp_psicovn')
+        self.g_comp_psicovn.prepare('PPPdiii')
         self.g_psi1compDer = module.get_function('psi1compDer')
         self.g_psi1compDer.prepare('PPPPPPPdPPPPiii')
         self.g_psi2compDer = module.get_function('psi2compDer')
         self.g_psi2compDer.prepare('PPPPPPPdPPPPiii')
+        self.g_update_psicov_der1 = module.get_function('update_psicov_der1')
+        self.g_update_psicov_der1.prepare('PPPPPPPPPPiii')
+        self.g_update_psicov_der2 = module.get_function('update_psicov_der2')
+        self.g_update_psicov_der2.prepare('PPPPPPPPiii')
         self.g_compDenom = module.get_function('compDenom')
         self.g_compDenom.prepare('PPPPii')
         
@@ -265,27 +367,25 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         import pycuda.gpuarray as gpuarray
         if self.gpuCache == None:
             self.gpuCache = {
-                             'l_gpu'                :gpuarray.empty((Q,),np.float64,order='F'),
+                             'l2_gpu'                :gpuarray.empty((Q,),np.float64,order='F'),
                              'Z_gpu'                :gpuarray.empty((M,Q),np.float64,order='F'),
                              'mu_gpu'               :gpuarray.empty((N,Q),np.float64,order='F'),
                              'S_gpu'                :gpuarray.empty((N,Q),np.float64,order='F'),
                              'psi1_gpu'             :gpuarray.empty((N,M),np.float64,order='F'),
-                             'psi2_gpu'             :gpuarray.empty((M,M),np.float64,order='F'),
+                             'psicov_gpu'             :gpuarray.empty((M,M),np.float64,order='F'),
                              'psi2n_gpu'            :gpuarray.empty((N,M,M),np.float64,order='F'),
                              'dL_dpsi1_gpu'         :gpuarray.empty((N,M),np.float64,order='F'),
                              'dL_dpsi2_gpu'         :gpuarray.empty((M,M),np.float64,order='F'),
                              'log_denom1_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
                              'log_denom2_gpu'       :gpuarray.empty((N,Q),np.float64,order='F'),
                              # derivatives
-                             'dvar_gpu'             :gpuarray.empty((self.blocknum,),np.float64, order='F'),
-                             'dl_gpu'               :gpuarray.empty((Q,self.blocknum),np.float64, order='F'),
+                             'dvar_gpu'             :gpuarray.empty((1,),np.float64, order='F'),
+                             'dl_gpu'               :gpuarray.empty((N,Q),np.float64, order='F'),
                              'dZ_gpu'               :gpuarray.empty((M,Q),np.float64, order='F'),
-                             'dmu_gpu'              :gpuarray.empty((N,Q,self.blocknum),np.float64, order='F'),
-                             'dS_gpu'               :gpuarray.empty((N,Q,self.blocknum),np.float64, order='F'),
+                             'dmu_gpu'              :gpuarray.empty((N,Q),np.float64, order='F'),
+                             'dS_gpu'               :gpuarray.empty((N,Q),np.float64, order='F'),
                              # grad
                              'grad_l_gpu'               :gpuarray.empty((Q,),np.float64, order='F'),
-                             'grad_mu_gpu'              :gpuarray.empty((N,Q,),np.float64, order='F'),
-                             'grad_S_gpu'               :gpuarray.empty((N,Q,),np.float64, order='F'),
                              }
         else:
             assert N==self.gpuCache['mu_gpu'].shape[0]
@@ -294,9 +394,9 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
     
     def sync_params(self, lengthscale, Z, mu, S):
         if len(lengthscale)==1:
-            self.gpuCache['l_gpu'].fill(lengthscale)
+            self.gpuCache['l2_gpu'].fill(lengthscale*lengthscale)
         else:
-            self.gpuCache['l_gpu'].set(np.asfortranarray(lengthscale))
+            self.gpuCache['l2_gpu'].set(np.square(np.asfortranarray(lengthscale)))
         self.gpuCache['Z_gpu'].set(np.asfortranarray(Z))
         self.gpuCache['mu_gpu'].set(np.asfortranarray(mu))
         self.gpuCache['S_gpu'].set(np.asfortranarray(S))
@@ -318,19 +418,9 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
     def get_dimensions(self, Z, variational_posterior):
         return variational_posterior.mean.shape[0], Z.shape[0], Z.shape[1]
 
-    def psicomputations(self, kern, Z, variational_posterior, return_psi2_n=False):
-        try:
-            return self._psicomputations(kern, Z, variational_posterior, return_psi2_n)
-        except:
-            return self.fall_back.psicomputations(kern, Z, variational_posterior, return_psi2_n)
-
-    @Cache_this(limit=10, ignore_args=(0,))
-    def _psicomputations(self, kern, Z, variational_posterior, return_psi2_n=False):
-        """
-        Z - MxQ
-        mu - NxQ
-        S - NxQ
-        """
+#    @Cache_this(limit=10, ignore_args=(0,))
+    def psicomputations(self, kern, Z, variational_posterior, return_psicov=False, return_n=False):
+        from pycuda import cumath
         variance, lengthscale = kern.variance, kern.lengthscale
         N,M,Q = self.get_dimensions(Z, variational_posterior)
         self._initGPUCache(N,M,Q)
@@ -354,12 +444,27 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         # print 'g_psi1computations '+str(t)
         # t = self.g_psi2computations(psi2_gpu, psi2n_gpu, log_denom2_gpu, np.float64(variance),l_gpu,Z_gpu,mu_gpu,S_gpu, np.int32(N), np.int32(M), np.int32(Q), block=(self.threadnum,1,1), grid=(self.blocknum,1),time_kernel=True)
         # print 'g_psi2computations '+str(t)
-         
-        if self.GPU_direct:
-            return psi0, psi1_gpu, psi2_gpu
+
+
+        if not return_n: 
+            psicov_gpu = self.gpuCache['psicov_gpu']
+            self.g_comp_psicov.prepared_call((self.blocknum,1),(self.threadnum,1,1), psi1_gpu.gpudata, psi2n_gpu.gpudata, psicov_gpu.gpudata, np.float64(variance), np.int32(N), np.int32(M), np.int32(Q))
         else:
-            if return_psi2_n:
-                return psi0, psi1_gpu.get(), psi2n_gpu.get()
+            if 'psicovn_gpu' in self.gpuCache: self.gpuCache['psicovn_gpu'] = gpuarray.empty((N,M,M),np.float64,order='F')
+            psicov_gpu = self.gpuCache['psicovn_gpu']
+            self.g_comp_psicovn.prepared_call((self.blocknum,1),(self.threadnum,1,1), psi1_gpu.gpudata, psi2n_gpu.gpudata, psicov_gpu.gpudata, np.float64(variance), np.int32(N), np.int32(M), np.int32(Q))
+        psi2n_gpu *= variance*variance
+        cumath.exp(psi1_gpu, psi1_gpu)
+        psi1_gpu *= variance
+
+        if return_psicov:
+            if self.GPU_direct:
+                return psi0, psi1_gpu, psicov_gpu
+            else:
+                return psi0, psi1_gpu.get(), psicov_gpu.get()
+        else:
+            if self.GPU_direct:
+                return psi0, psi1_gpu, psi2_gpu
             else:
                 return psi0, psi1_gpu.get(), psi2_gpu.get()
         
