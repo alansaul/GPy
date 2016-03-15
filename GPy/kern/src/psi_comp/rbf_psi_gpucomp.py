@@ -266,8 +266,8 @@ gpu_code = """
         for(int p=0;p<P;p++) {
             int idx = p*THREADNUM + threadIdx.x;
             if(idx>=NQ) {break;}
-            int n = (idx+idx_start)%N;
-            int q = (idx+idx_start)/N;
+            int n = (idx+idx_start)/Q;
+            int q = (idx+idx_start)%Q;
 
             double mu_nq = mu[IDX_NQ(n,q)];
             double Snq = S[IDX_NQ(n,q)];
@@ -322,8 +322,8 @@ gpu_code = """
         for(int p=0;p<P;p++) {
             int idx = p*THREADNUM + threadIdx.x;
             if(idx>=MQ) {break;}
-            int m1 = (idx+idx_start)%M;
-            int q = (idx+idx_start)/M;
+            int m1 = (idx+idx_start)/Q;
+            int q = (idx+idx_start)%Q;
 
             double dZ_mq = 0.;
             double Z1 = Z[IDX_MQ(m1,q)];
@@ -362,8 +362,8 @@ gpu_code = """
         for(int p=0;p<P;p++) {
             int idx = p*THREADNUM + threadIdx.x;
             if(idx>=NQ) {break;}
-            int n = (idx+idx_start)%N;
-            int q = (idx+idx_start)/N;
+            int n = (idx+idx_start)/Q;
+            int q = (idx+idx_start)%Q;
 
             double mu_nq = mu[IDX_NQ(n,q)];
             double Snq = S[IDX_NQ(n,q)];
@@ -418,8 +418,8 @@ gpu_code = """
         for(int p=0;p<P;p++) {
             int idx = p*THREADNUM + threadIdx.x;
             if(idx>=MQ) {break;}
-            int m1 = (idx+idx_start)%M;
-            int q = (idx+idx_start)/M;
+            int m1 = (idx+idx_start)/Q;
+            int q = (idx+idx_start)%Q;
 
             double dZ_mq = 0.;
             double Z1 = Z[IDX_MQ(m1,q)];
