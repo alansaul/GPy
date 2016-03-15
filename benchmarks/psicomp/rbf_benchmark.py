@@ -3,7 +3,7 @@
 import numpy as np
 from GPy.core.parameterization.variational import NormalPosterior
 from GPy.kern import RBF
-from GPy.kern.src.psi_comp import PSICOMP_RBF_Cython
+from GPy.kern.src.psi_comp import PSICOMP_RBF_Cython, PSICOMP_RBF_GPU
 import time
 
 np.random.seed(123)
@@ -69,3 +69,34 @@ print('RBF psi-stat (psicov) computation time: '+'%.2f'%(time.time()-st_time)+' 
 st_time = time.time()
 psicomp_cython.psiDerivativecomputations_psicov(kern, w1, w2, w3, Z, qX)
 print('RBF psi-stat (psicov) derivative computation time: '+'%.2f'%(time.time()-st_time)+' sec.')
+
+print("""
+
+
+======================================
+RBF psi-statistics benchmark (GPU)
+======================================
+""")
+print('N = '+str(N))
+print('M = '+str(M))
+print('Q = '+str(Q))
+print('')
+
+psicomp_gpu = PSICOMP_RBF_GPU()
+
+st_time = time.time()
+psicomp_gpu.psicomputations(kern, Z, qX)
+print('RBF psi-stat computation time: '+'%.2f'%(time.time()-st_time)+' sec.')
+
+psicomp_gpu.psicomputations(kern, Z, qX, return_psicov=True)
+psicomp_gpu.psiDerivativecomputations_psicov(kern, w1, w2, w3, Z, qX)
+
+st_time = time.time()
+psicomp_gpu.psicomputations(kern, Z, qX, return_psicov=True)
+print('RBF psi-stat (psicov) computation time: '+'%.2f'%(time.time()-st_time)+' sec.')
+
+st_time = time.time()
+psicomp_gpu.psiDerivativecomputations_psicov(kern, w1, w2, w3, Z, qX)
+print('RBF psi-stat (psicov) derivative computation time: '+'%.2f'%(time.time()-st_time)+' sec.')
+
+

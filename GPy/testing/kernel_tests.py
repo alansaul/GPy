@@ -495,7 +495,7 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
         
         from GPy.kern import RBF
         Q = self.Z.shape[1]
-        kern = RBF(Q,ARD=True)
+        kern = RBF(Q,ARD=True, variance= 0.3, lengthscale=0.7)
         psicov = kern.psicov(self.Z, self.qX)
         psi2 = kern.psi2(self.Z, self.qX)
         psi1 = kern.psi1(self.Z, self.qX)
@@ -504,7 +504,7 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
     def test_rbf_psicomp_cython(self):
         from GPy.kern import RBF
         Q = self.Z.shape[1]
-        kern = RBF(Q,ARD=True)
+        kern = RBF(Q,ARD=True, variance= 0.3, lengthscale=0.7)
 
         from GPy.kern.src.psi_comp import PSICOMP_RBF, PSICOMP_RBF_Cython
         psicomp1 = PSICOMP_RBF()
@@ -688,44 +688,6 @@ class Kernel_Psi_statistics_psicov_GradientTests(unittest.TestCase):
         f(self.qX.param_array.copy())
         m = GradientChecker(f, df, self.qX.param_array.copy())
         self.assertTrue(m.checkgrad())
-
-try:
-
-    class RBF_GPU_Psi_statistics_Tests(unittest.TestCase):
-
-        def setUp(self):
-            from GPy.core.parameterization.variational import NormalPosterior
-            N,M,Q = 100,20,3
-
-            X = np.random.randn(N,Q)
-            X_var = np.random.rand(N,Q)+0.01
-            self.Z = np.random.randn(M,Q)
-            self.qX = NormalPosterior(X, X_var)
-            self.X_mean = X
-            self.X_var = X_var
-
-            self.w1 = np.random.randn(N)
-            self.w2 = np.random.randn(N,M)
-            self.w3 = np.random.randn(M,M)
-            self.w3n = np.random.randn(N,M,M)
-
-        def test_psi_statistics(self):
-            from GPy.kern.src.psi_comp import PSICOMP_RBF_Cython, PSICOMP_RBF_GPU
-            psicomp_cython = PSICOMP_RBF_Cython()
-            psicomp_gpu = PSICOMP_RBF_GPU()
-
-
-            for return_psicov in [True, False]:
-                for return_n in [True, False]:
-                    rs1 = psicomp_cython.psicomputations(kern, self.Z, self.qX, return_psicov, return_n)
-                    rs2 = psicomp_gpu.psicomputations(kern, self.Z, self.qX, return_psicov, return_n)
-                    print return_psicov, return_n
-                    print rs1, rs2
-                    comp = [np.allclose(r1,r2) for r1, r2 in zip(rs1, rs2)]
-                    self.assertTrue(np.all(comp))
-
-except:
-    pass
 
 if __name__ == "__main__":
     print("Running unit tests, please be (very) patient...")
