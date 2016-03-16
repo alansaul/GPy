@@ -542,7 +542,7 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
     def get_dimensions(self, Z, variational_posterior):
         return variational_posterior.mean.shape[0], Z.shape[0], Z.shape[1]
 
-#    @Cache_this(limit=10, ignore_args=(0,))
+    @Cache_this(limit=10, ignore_args=(0,))
     def psicomputations(self, kern, Z, variational_posterior, return_psicov=False, return_n=False):
         from pycuda import cumath, gpuarray
         variance, lengthscale = kern.variance, kern.lengthscale
@@ -586,7 +586,7 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
             else:
                 return psi0, psi1_gpu.get(), psi2n_gpu.get() if return_n else psi2n_gpu.get().sum(0)
 
-    # @Cache_this(limit=10, ignore_args=(0,2,3,4))
+    @Cache_this(limit=10, ignore_args=(0,2,3,4))
     def psiDerivativecomputations_psicov(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
         from pycuda import gpuarray
         
@@ -611,7 +611,7 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         
         if self.GPU_direct:
             dL_dpsi1_gpu = dL_dpsi1
-            dL_dpsi2_gpu = dL_dpsi2
+            dpsicov_gpu = dL_dpsicov
             dL_dpsi0_sum = dL_dpsi0.get().sum() #gpuarray.sum(dL_dpsi0).get()
         else:
             dpsi1_gpu = self.gpuCache['dpsi1_gpu']
@@ -644,8 +644,8 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
         dL_dS = dS_gpu.get()
         dL_dZ = dZ_gpu.get()
         if ARD:
-           sum_axis(grad_l_gpu,dl_gpu,1,N)
-           dL_dl = grad_l_gpu.get()*2.*lengthscale
+            sum_axis(grad_l_gpu,dl_gpu,1,N)
+            dL_dl = grad_l_gpu.get()*2.*lengthscale
         else:
             dL_dl = dl_gpu.get().sum()*2.*lengthscale
             

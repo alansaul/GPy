@@ -2173,17 +2173,17 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_comp_logpsi1(CY
                 #endif /* _OPENMP */
                 {
                     #ifdef _OPENMP
-                    #pragma omp for lastprivate(__pyx_v_muZ) lastprivate(__pyx_v_log_psi1_local) lastprivate(__pyx_v_m) lastprivate(__pyx_v_q) firstprivate(__pyx_v_idx) lastprivate(__pyx_v_idx) lastprivate(__pyx_v_n)
+                    #pragma omp for lastprivate(__pyx_v_muZ) lastprivate(__pyx_v_n) lastprivate(__pyx_v_log_psi1_local) lastprivate(__pyx_v_m) lastprivate(__pyx_v_q) firstprivate(__pyx_v_idx) lastprivate(__pyx_v_idx)
                     #endif /* _OPENMP */
                     for (__pyx_t_2 = 0; __pyx_t_2 < __pyx_t_3; __pyx_t_2++){
                         {
                             __pyx_v_idx = 0 + 1 * __pyx_t_2;
                             /* Initialize private variables to invalid values */
                             __pyx_v_muZ = ((double)__PYX_NAN());
+                            __pyx_v_n = ((int)0xbad0bad0);
                             __pyx_v_log_psi1_local = ((double)__PYX_NAN());
                             __pyx_v_m = ((int)0xbad0bad0);
                             __pyx_v_q = ((int)0xbad0bad0);
-                            __pyx_v_n = ((int)0xbad0bad0);
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":23
  * 
@@ -2589,20 +2589,20 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_2comp_logpsi2(C
                 #endif /* _OPENMP */
                 {
                     #ifdef _OPENMP
-                    #pragma omp for lastprivate(__pyx_v_q) lastprivate(__pyx_v_m2) lastprivate(__pyx_v_dZ) lastprivate(__pyx_v_n) lastprivate(__pyx_v_m1) lastprivate(__pyx_v_m_idx) lastprivate(__pyx_v_log_psi2_local) firstprivate(__pyx_v_idx) lastprivate(__pyx_v_idx) lastprivate(__pyx_v_muZhat)
+                    #pragma omp for lastprivate(__pyx_v_m_idx) lastprivate(__pyx_v_m1) lastprivate(__pyx_v_m2) lastprivate(__pyx_v_muZhat) firstprivate(__pyx_v_idx) lastprivate(__pyx_v_idx) lastprivate(__pyx_v_n) lastprivate(__pyx_v_log_psi2_local) lastprivate(__pyx_v_dZ) lastprivate(__pyx_v_q)
                     #endif /* _OPENMP */
                     for (__pyx_t_2 = 0; __pyx_t_2 < __pyx_t_3; __pyx_t_2++){
                         {
                             __pyx_v_idx = 0 + 1 * __pyx_t_2;
                             /* Initialize private variables to invalid values */
-                            __pyx_v_q = ((int)0xbad0bad0);
-                            __pyx_v_m2 = ((int)0xbad0bad0);
-                            __pyx_v_dZ = ((double)__PYX_NAN());
-                            __pyx_v_n = ((int)0xbad0bad0);
-                            __pyx_v_m1 = ((int)0xbad0bad0);
                             __pyx_v_m_idx = ((int)0xbad0bad0);
-                            __pyx_v_log_psi2_local = ((double)__PYX_NAN());
+                            __pyx_v_m1 = ((int)0xbad0bad0);
+                            __pyx_v_m2 = ((int)0xbad0bad0);
                             __pyx_v_muZhat = ((double)__PYX_NAN());
+                            __pyx_v_n = ((int)0xbad0bad0);
+                            __pyx_v_log_psi2_local = ((double)__PYX_NAN());
+                            __pyx_v_dZ = ((double)__PYX_NAN());
+                            __pyx_v_q = ((int)0xbad0bad0);
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":46
  * 
@@ -3376,7 +3376,7 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_6comp_psicovn(C
                 #endif /* _OPENMP */
                 {
                     #ifdef _OPENMP
-                    #pragma omp for lastprivate(__pyx_v_m2) lastprivate(__pyx_v_n) lastprivate(__pyx_v_exp_psi2_local) lastprivate(__pyx_v_psi2_local) lastprivate(__pyx_v_m1) lastprivate(__pyx_v_psi1_local) lastprivate(__pyx_v_psicov_local) firstprivate(__pyx_v_m_idx) lastprivate(__pyx_v_m_idx)
+                    #pragma omp for lastprivate(__pyx_v_m2) lastprivate(__pyx_v_n) lastprivate(__pyx_v_psi1_local) lastprivate(__pyx_v_psi2_local) lastprivate(__pyx_v_m1) lastprivate(__pyx_v_exp_psi2_local) lastprivate(__pyx_v_psicov_local) firstprivate(__pyx_v_m_idx) lastprivate(__pyx_v_m_idx)
                     #endif /* _OPENMP */
                     for (__pyx_t_2 = 0; __pyx_t_2 < __pyx_t_3; __pyx_t_2++){
                         {
@@ -3384,10 +3384,10 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_6comp_psicovn(C
                             /* Initialize private variables to invalid values */
                             __pyx_v_m2 = ((int)0xbad0bad0);
                             __pyx_v_n = ((int)0xbad0bad0);
-                            __pyx_v_exp_psi2_local = ((double)__PYX_NAN());
+                            __pyx_v_psi1_local = ((double)__PYX_NAN());
                             __pyx_v_psi2_local = ((double)__PYX_NAN());
                             __pyx_v_m1 = ((int)0xbad0bad0);
-                            __pyx_v_psi1_local = ((double)__PYX_NAN());
+                            __pyx_v_exp_psi2_local = ((double)__PYX_NAN());
                             __pyx_v_psicov_local = ((double)__PYX_NAN());
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":90
@@ -4165,21 +4165,21 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
   Py_ssize_t __pyx_t_12;
   Py_ssize_t __pyx_t_13;
   Py_ssize_t __pyx_t_14;
-  Py_ssize_t __pyx_t_15;
-  Py_ssize_t __pyx_t_16;
+  int __pyx_t_15;
+  int __pyx_t_16;
   Py_ssize_t __pyx_t_17;
   Py_ssize_t __pyx_t_18;
   Py_ssize_t __pyx_t_19;
   Py_ssize_t __pyx_t_20;
-  int __pyx_t_21;
+  long __pyx_t_21;
   int __pyx_t_22;
-  Py_ssize_t __pyx_t_23;
+  int __pyx_t_23;
   Py_ssize_t __pyx_t_24;
   Py_ssize_t __pyx_t_25;
   Py_ssize_t __pyx_t_26;
-  long __pyx_t_27;
-  int __pyx_t_28;
-  int __pyx_t_29;
+  Py_ssize_t __pyx_t_27;
+  Py_ssize_t __pyx_t_28;
+  Py_ssize_t __pyx_t_29;
   Py_ssize_t __pyx_t_30;
   Py_ssize_t __pyx_t_31;
   Py_ssize_t __pyx_t_32;
@@ -4205,13 +4205,13 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
   Py_ssize_t __pyx_t_52;
   Py_ssize_t __pyx_t_53;
   Py_ssize_t __pyx_t_54;
-  Py_ssize_t __pyx_t_55;
+  int __pyx_t_55;
   Py_ssize_t __pyx_t_56;
   Py_ssize_t __pyx_t_57;
   Py_ssize_t __pyx_t_58;
   Py_ssize_t __pyx_t_59;
   Py_ssize_t __pyx_t_60;
-  int __pyx_t_61;
+  Py_ssize_t __pyx_t_61;
   Py_ssize_t __pyx_t_62;
   Py_ssize_t __pyx_t_63;
   Py_ssize_t __pyx_t_64;
@@ -4219,12 +4219,6 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
   Py_ssize_t __pyx_t_66;
   Py_ssize_t __pyx_t_67;
   Py_ssize_t __pyx_t_68;
-  Py_ssize_t __pyx_t_69;
-  Py_ssize_t __pyx_t_70;
-  Py_ssize_t __pyx_t_71;
-  Py_ssize_t __pyx_t_72;
-  Py_ssize_t __pyx_t_73;
-  Py_ssize_t __pyx_t_74;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -4349,7 +4343,7 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
             if (__pyx_t_9 > 0)
             {
                 #ifdef _OPENMP
-                #pragma omp parallel private(__pyx_t_38, __pyx_t_47, __pyx_t_23, __pyx_t_26, __pyx_t_13, __pyx_t_48, __pyx_t_27, __pyx_t_29, __pyx_t_41, __pyx_t_20, __pyx_t_14, __pyx_t_19, __pyx_t_35, __pyx_t_42, __pyx_t_21, __pyx_t_12, __pyx_t_37, __pyx_t_24, __pyx_t_11, __pyx_t_22, __pyx_t_18, __pyx_t_34, __pyx_t_31, __pyx_t_43, __pyx_t_17, __pyx_t_44, __pyx_t_36, __pyx_t_25, __pyx_t_10, __pyx_t_15, __pyx_t_39, __pyx_t_46, __pyx_t_32, __pyx_t_30, __pyx_t_28, __pyx_t_16, __pyx_t_33, __pyx_t_45, __pyx_t_40)
+                #pragma omp parallel private(__pyx_t_38, __pyx_t_26, __pyx_t_28, __pyx_t_13, __pyx_t_32, __pyx_t_41, __pyx_t_21, __pyx_t_19, __pyx_t_35, __pyx_t_42, __pyx_t_27, __pyx_t_29, __pyx_t_12, __pyx_t_37, __pyx_t_15, __pyx_t_14, __pyx_t_22, __pyx_t_24, __pyx_t_18, __pyx_t_34, __pyx_t_31, __pyx_t_23, __pyx_t_11, __pyx_t_17, __pyx_t_36, __pyx_t_25, __pyx_t_16, __pyx_t_10, __pyx_t_39, __pyx_t_30, __pyx_t_20, __pyx_t_33, __pyx_t_40)
                 #endif /* _OPENMP */
                 {
                     #ifdef _OPENMP
@@ -4419,7 +4413,7 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *         mu_nq = mu[n,q]
  *         Snq = S[n,q]             # <<<<<<<<<<<<<<
  *         l2q = l2[q]
- *         psi2_denom = 2.*S[n,q]+l2[q]
+ *         psi2_denom = 2.*Snq+l2q
  */
                             __pyx_t_12 = __pyx_v_n;
                             __pyx_t_13 = __pyx_v_q;
@@ -4429,8 +4423,8 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *         mu_nq = mu[n,q]
  *         Snq = S[n,q]
  *         l2q = l2[q]             # <<<<<<<<<<<<<<
- *         psi2_denom = 2.*S[n,q]+l2[q]
- *         psi1_denom = S[n,q] + l2[q]
+ *         psi2_denom = 2.*Snq+l2q
+ *         psi1_denom = Snq + l2q
  */
                             __pyx_t_14 = __pyx_v_q;
                             __pyx_v_l2q = (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_14 * __pyx_v_l2.strides[0]) )));
@@ -4438,30 +4432,24 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":149
  *         Snq = S[n,q]
  *         l2q = l2[q]
- *         psi2_denom = 2.*S[n,q]+l2[q]             # <<<<<<<<<<<<<<
- *         psi1_denom = S[n,q] + l2[q]
+ *         psi2_denom = 2.*Snq+l2q             # <<<<<<<<<<<<<<
+ *         psi1_denom = Snq + l2q
  *         Snq_l2q = Snq/l2q
  */
-                            __pyx_t_15 = __pyx_v_n;
-                            __pyx_t_16 = __pyx_v_q;
-                            __pyx_t_17 = __pyx_v_q;
-                            __pyx_v_psi2_denom = ((2. * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_15 * __pyx_v_S.strides[0]) ) + __pyx_t_16 * __pyx_v_S.strides[1]) )))) + (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_17 * __pyx_v_l2.strides[0]) ))));
+                            __pyx_v_psi2_denom = ((2. * __pyx_v_Snq) + __pyx_v_l2q);
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":150
  *         l2q = l2[q]
- *         psi2_denom = 2.*S[n,q]+l2[q]
- *         psi1_denom = S[n,q] + l2[q]             # <<<<<<<<<<<<<<
+ *         psi2_denom = 2.*Snq+l2q
+ *         psi1_denom = Snq + l2q             # <<<<<<<<<<<<<<
  *         Snq_l2q = Snq/l2q
  * 
  */
-                            __pyx_t_18 = __pyx_v_n;
-                            __pyx_t_19 = __pyx_v_q;
-                            __pyx_t_20 = __pyx_v_q;
-                            __pyx_v_psi1_denom = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_18 * __pyx_v_S.strides[0]) ) + __pyx_t_19 * __pyx_v_S.strides[1]) ))) + (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_20 * __pyx_v_l2.strides[0]) ))));
+                            __pyx_v_psi1_denom = (__pyx_v_Snq + __pyx_v_l2q);
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":151
- *         psi2_denom = 2.*S[n,q]+l2[q]
- *         psi1_denom = S[n,q] + l2[q]
+ *         psi2_denom = 2.*Snq+l2q
+ *         psi1_denom = Snq + l2q
  *         Snq_l2q = Snq/l2q             # <<<<<<<<<<<<<<
  * 
  *         dmu_nq = 0.
@@ -4502,9 +4490,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *             Z1 = Z[m1,q]
  *             psi1_1 = psi1[n,m1]/psi1_denom
  */
-                            __pyx_t_21 = __pyx_v_M;
-                            for (__pyx_t_22 = 0; __pyx_t_22 < __pyx_t_21; __pyx_t_22+=1) {
-                              __pyx_v_m1 = __pyx_t_22;
+                            __pyx_t_15 = __pyx_v_M;
+                            for (__pyx_t_16 = 0; __pyx_t_16 < __pyx_t_15; __pyx_t_16+=1) {
+                              __pyx_v_m1 = __pyx_t_16;
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":158
  * 
@@ -4513,9 +4501,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *             psi1_1 = psi1[n,m1]/psi1_denom
  *             Z1mu = Z1 - mu_nq
  */
-                              __pyx_t_23 = __pyx_v_m1;
-                              __pyx_t_24 = __pyx_v_q;
-                              __pyx_v_Z1 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_23 * __pyx_v_Z.strides[0]) ) + __pyx_t_24 * __pyx_v_Z.strides[1]) )));
+                              __pyx_t_17 = __pyx_v_m1;
+                              __pyx_t_18 = __pyx_v_q;
+                              __pyx_v_Z1 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_17 * __pyx_v_Z.strides[0]) ) + __pyx_t_18 * __pyx_v_Z.strides[1]) )));
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":159
  *         for m1 in range(M):
@@ -4524,9 +4512,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *             Z1mu = Z1 - mu_nq
  * 
  */
-                              __pyx_t_25 = __pyx_v_n;
-                              __pyx_t_26 = __pyx_v_m1;
-                              __pyx_v_psi1_1 = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_25 * __pyx_v_psi1.strides[0]) ) + __pyx_t_26 * __pyx_v_psi1.strides[1]) ))) / __pyx_v_psi1_denom);
+                              __pyx_t_19 = __pyx_v_n;
+                              __pyx_t_20 = __pyx_v_m1;
+                              __pyx_v_psi1_1 = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_19 * __pyx_v_psi1.strides[0]) ) + __pyx_t_20 * __pyx_v_psi1.strides[1]) ))) / __pyx_v_psi1_denom);
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":160
  *             Z1 = Z[m1,q]
@@ -4544,9 +4532,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *                 if m1!=m2:
  *                     dpsicov_local = dpsicov[m1,m2] +  dpsicov[m2,m1]
  */
-                              __pyx_t_27 = (__pyx_v_m1 + 1);
-                              for (__pyx_t_28 = 0; __pyx_t_28 < __pyx_t_27; __pyx_t_28+=1) {
-                                __pyx_v_m2 = __pyx_t_28;
+                              __pyx_t_21 = (__pyx_v_m1 + 1);
+                              for (__pyx_t_22 = 0; __pyx_t_22 < __pyx_t_21; __pyx_t_22+=1) {
+                                __pyx_v_m2 = __pyx_t_22;
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":163
  * 
@@ -4555,8 +4543,8 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *                     dpsicov_local = dpsicov[m1,m2] +  dpsicov[m2,m1]
  *                 else:
  */
-                                __pyx_t_29 = ((__pyx_v_m1 != __pyx_v_m2) != 0);
-                                if (__pyx_t_29) {
+                                __pyx_t_23 = ((__pyx_v_m1 != __pyx_v_m2) != 0);
+                                if (__pyx_t_23) {
 
                                   /* "GPy/kern/src/psi_comp/rbf_cython.pyx":164
  *             for m2 in range(m1+1):
@@ -4565,11 +4553,11 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *                 else:
  *                     dpsicov_local = dpsicov[m1,m2]
  */
-                                  __pyx_t_30 = __pyx_v_m1;
-                                  __pyx_t_31 = __pyx_v_m2;
-                                  __pyx_t_32 = __pyx_v_m2;
-                                  __pyx_t_33 = __pyx_v_m1;
-                                  __pyx_v_dpsicov_local = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_30 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_31 * __pyx_v_dpsicov.strides[1]) ))) + (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_32 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_33 * __pyx_v_dpsicov.strides[1]) ))));
+                                  __pyx_t_24 = __pyx_v_m1;
+                                  __pyx_t_25 = __pyx_v_m2;
+                                  __pyx_t_26 = __pyx_v_m2;
+                                  __pyx_t_27 = __pyx_v_m1;
+                                  __pyx_v_dpsicov_local = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_24 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_25 * __pyx_v_dpsicov.strides[1]) ))) + (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_26 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_27 * __pyx_v_dpsicov.strides[1]) ))));
 
                                   /* "GPy/kern/src/psi_comp/rbf_cython.pyx":163
  * 
@@ -4589,9 +4577,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *                 psi1_2 = psi1_1*psi1[n,m2]
  */
                                 /*else*/ {
-                                  __pyx_t_34 = __pyx_v_m1;
-                                  __pyx_t_35 = __pyx_v_m2;
-                                  __pyx_v_dpsicov_local = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_34 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_35 * __pyx_v_dpsicov.strides[1]) )));
+                                  __pyx_t_28 = __pyx_v_m1;
+                                  __pyx_t_29 = __pyx_v_m2;
+                                  __pyx_v_dpsicov_local = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_28 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_29 * __pyx_v_dpsicov.strides[1]) )));
                                 }
                                 __pyx_L14:;
 
@@ -4602,9 +4590,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *                 psi1_2 = psi1_1*psi1[n,m2]
  *                 psi2n = psi2[n,m1,m2]/psi2_denom
  */
-                                __pyx_t_36 = __pyx_v_m2;
-                                __pyx_t_37 = __pyx_v_q;
-                                __pyx_v_Z2 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_36 * __pyx_v_Z.strides[0]) ) + __pyx_t_37 * __pyx_v_Z.strides[1]) )));
+                                __pyx_t_30 = __pyx_v_m2;
+                                __pyx_t_31 = __pyx_v_q;
+                                __pyx_v_Z2 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_30 * __pyx_v_Z.strides[0]) ) + __pyx_t_31 * __pyx_v_Z.strides[1]) )));
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":168
  *                     dpsicov_local = dpsicov[m1,m2]
@@ -4613,9 +4601,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *                 psi2n = psi2[n,m1,m2]/psi2_denom
  * 
  */
-                                __pyx_t_38 = __pyx_v_n;
-                                __pyx_t_39 = __pyx_v_m2;
-                                __pyx_v_psi1_2 = (__pyx_v_psi1_1 * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_38 * __pyx_v_psi1.strides[0]) ) + __pyx_t_39 * __pyx_v_psi1.strides[1]) ))));
+                                __pyx_t_32 = __pyx_v_n;
+                                __pyx_t_33 = __pyx_v_m2;
+                                __pyx_v_psi1_2 = (__pyx_v_psi1_1 * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_32 * __pyx_v_psi1.strides[0]) ) + __pyx_t_33 * __pyx_v_psi1.strides[1]) ))));
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":169
  *                 Z2 = Z[m2,q]
@@ -4624,10 +4612,10 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  * 
  *                 Z1Z2 = Z1 - Z2
  */
-                                __pyx_t_40 = __pyx_v_n;
-                                __pyx_t_41 = __pyx_v_m1;
-                                __pyx_t_42 = __pyx_v_m2;
-                                __pyx_v_psi2n = ((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_40 * __pyx_v_psi2.strides[0]) ) + __pyx_t_41 * __pyx_v_psi2.strides[1]) ) + __pyx_t_42 * __pyx_v_psi2.strides[2]) ))) / __pyx_v_psi2_denom);
+                                __pyx_t_34 = __pyx_v_n;
+                                __pyx_t_35 = __pyx_v_m1;
+                                __pyx_t_36 = __pyx_v_m2;
+                                __pyx_v_psi2n = ((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_34 * __pyx_v_psi2.strides[0]) ) + __pyx_t_35 * __pyx_v_psi2.strides[1]) ) + __pyx_t_36 * __pyx_v_psi2.strides[2]) ))) / __pyx_v_psi2_denom);
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":171
  *                 psi2n = psi2[n,m1,m2]/psi2_denom
@@ -4710,9 +4698,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *         dS[n,q] += dS_nq
  *         dl2_n[q,n] = dl2_nq
  */
-                            __pyx_t_43 = __pyx_v_n;
-                            __pyx_t_44 = __pyx_v_q;
-                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dmu.data + __pyx_t_43 * __pyx_v_dmu.strides[0]) ) + __pyx_t_44 * __pyx_v_dmu.strides[1]) )) += __pyx_v_dmu_nq;
+                            __pyx_t_37 = __pyx_v_n;
+                            __pyx_t_38 = __pyx_v_q;
+                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dmu.data + __pyx_t_37 * __pyx_v_dmu.strides[0]) ) + __pyx_t_38 * __pyx_v_dmu.strides[1]) )) += __pyx_v_dmu_nq;
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":183
  * 
@@ -4721,9 +4709,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *         dl2_n[q,n] = dl2_nq
  * 
  */
-                            __pyx_t_45 = __pyx_v_n;
-                            __pyx_t_46 = __pyx_v_q;
-                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dS.data + __pyx_t_45 * __pyx_v_dS.strides[0]) ) + __pyx_t_46 * __pyx_v_dS.strides[1]) )) += __pyx_v_dS_nq;
+                            __pyx_t_39 = __pyx_v_n;
+                            __pyx_t_40 = __pyx_v_q;
+                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dS.data + __pyx_t_39 * __pyx_v_dS.strides[0]) ) + __pyx_t_40 * __pyx_v_dS.strides[1]) )) += __pyx_v_dS_nq;
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":184
  *         dmu[n,q] += dmu_nq
@@ -4732,9 +4720,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  * 
  *     for q in prange(Q, nogil=True):
  */
-                            __pyx_t_47 = __pyx_v_q;
-                            __pyx_t_48 = __pyx_v_n;
-                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dl2_n.data + __pyx_t_47 * __pyx_v_dl2_n.strides[0]) ) + __pyx_t_48 * __pyx_v_dl2_n.strides[1]) )) = __pyx_v_dl2_nq;
+                            __pyx_t_41 = __pyx_v_q;
+                            __pyx_t_42 = __pyx_v_n;
+                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dl2_n.data + __pyx_t_41 * __pyx_v_dl2_n.strides[0]) ) + __pyx_t_42 * __pyx_v_dl2_n.strides[1]) )) = __pyx_v_dl2_nq;
                         }
                     }
                 }
@@ -4792,7 +4780,7 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
             if (__pyx_t_7 > 0)
             {
                 #ifdef _OPENMP
-                #pragma omp parallel private(__pyx_t_49, __pyx_t_22, __pyx_t_21, __pyx_t_51, __pyx_t_50)
+                #pragma omp parallel private(__pyx_t_16, __pyx_t_44, __pyx_t_15, __pyx_t_45, __pyx_t_43)
                 #endif /* _OPENMP */
                 {
                     #ifdef _OPENMP
@@ -4821,9 +4809,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *             dl2_nq =dl2_nq+ dl2_n[q,n]
  *         dl2[q] += dl2_nq
  */
-                            __pyx_t_21 = __pyx_v_N;
-                            for (__pyx_t_22 = 0; __pyx_t_22 < __pyx_t_21; __pyx_t_22+=1) {
-                              __pyx_v_n = __pyx_t_22;
+                            __pyx_t_15 = __pyx_v_N;
+                            for (__pyx_t_16 = 0; __pyx_t_16 < __pyx_t_15; __pyx_t_16+=1) {
+                              __pyx_v_n = __pyx_t_16;
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":189
  *         dl2_nq = 0.
@@ -4832,9 +4820,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *         dl2[q] += dl2_nq
  * 
  */
-                              __pyx_t_49 = __pyx_v_q;
-                              __pyx_t_50 = __pyx_v_n;
-                              __pyx_v_dl2_nq = (__pyx_v_dl2_nq + (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dl2_n.data + __pyx_t_49 * __pyx_v_dl2_n.strides[0]) ) + __pyx_t_50 * __pyx_v_dl2_n.strides[1]) ))));
+                              __pyx_t_43 = __pyx_v_q;
+                              __pyx_t_44 = __pyx_v_n;
+                              __pyx_v_dl2_nq = (__pyx_v_dl2_nq + (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dl2_n.data + __pyx_t_43 * __pyx_v_dl2_n.strides[0]) ) + __pyx_t_44 * __pyx_v_dl2_n.strides[1]) ))));
                             }
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":190
@@ -4844,8 +4832,8 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  * 
  *     for m_idx in prange(M*Q, nogil=True):
  */
-                            __pyx_t_51 = __pyx_v_q;
-                            *((double *) ( /* dim=0 */ (__pyx_v_dl2.data + __pyx_t_51 * __pyx_v_dl2.strides[0]) )) += __pyx_v_dl2_nq;
+                            __pyx_t_45 = __pyx_v_q;
+                            *((double *) ( /* dim=0 */ (__pyx_v_dl2.data + __pyx_t_45 * __pyx_v_dl2.strides[0]) )) += __pyx_v_dl2_nq;
                         }
                     }
                 }
@@ -4903,35 +4891,35 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
             if (__pyx_t_9 > 0)
             {
                 #ifdef _OPENMP
-                #pragma omp parallel private(__pyx_t_22, __pyx_t_62, __pyx_t_74, __pyx_t_57, __pyx_t_65, __pyx_t_60, __pyx_t_58, __pyx_t_55, __pyx_t_68, __pyx_t_61, __pyx_t_21, __pyx_t_63, __pyx_t_56, __pyx_t_53, __pyx_t_70, __pyx_t_73, __pyx_t_54, __pyx_t_69, __pyx_t_72, __pyx_t_66, __pyx_t_52, __pyx_t_59, __pyx_t_71, __pyx_t_67, __pyx_t_28, __pyx_t_64)
+                #pragma omp parallel private(__pyx_t_47, __pyx_t_50, __pyx_t_22, __pyx_t_48, __pyx_t_57, __pyx_t_65, __pyx_t_60, __pyx_t_58, __pyx_t_49, __pyx_t_68, __pyx_t_16, __pyx_t_63, __pyx_t_15, __pyx_t_56, __pyx_t_53, __pyx_t_54, __pyx_t_66, __pyx_t_62, __pyx_t_55, __pyx_t_52, __pyx_t_59, __pyx_t_61, __pyx_t_46, __pyx_t_51, __pyx_t_67, __pyx_t_64)
                 #endif /* _OPENMP */
                 {
                     #ifdef _OPENMP
-                    #pragma omp for lastprivate(__pyx_v_Z1Z2) lastprivate(__pyx_v_dpsicov_local) lastprivate(__pyx_v_Z1) lastprivate(__pyx_v_n) lastprivate(__pyx_v_psi1_denom) lastprivate(__pyx_v_mu_nq) lastprivate(__pyx_v_psi2n) lastprivate(__pyx_v_m2) lastprivate(__pyx_v_q) lastprivate(__pyx_v_psi2_denom) lastprivate(__pyx_v_dZ_mq) firstprivate(__pyx_v_m_idx) lastprivate(__pyx_v_m_idx) lastprivate(__pyx_v_psi1_1) lastprivate(__pyx_v_Z2) lastprivate(__pyx_v_Snq) lastprivate(__pyx_v_psi1_2) lastprivate(__pyx_v_l2q) lastprivate(__pyx_v_muZhat) lastprivate(__pyx_v_Z1mu) lastprivate(__pyx_v_m1)
+                    #pragma omp for lastprivate(__pyx_v_m1) lastprivate(__pyx_v_Snq) lastprivate(__pyx_v_Z1mu) lastprivate(__pyx_v_Z1Z2) lastprivate(__pyx_v_q) lastprivate(__pyx_v_psi1_denom) lastprivate(__pyx_v_n) lastprivate(__pyx_v_mu_nq) lastprivate(__pyx_v_psi2n) lastprivate(__pyx_v_m2) lastprivate(__pyx_v_l2q) lastprivate(__pyx_v_Z1) lastprivate(__pyx_v_dZ_mq) lastprivate(__pyx_v_psi1_1) lastprivate(__pyx_v_Z2) firstprivate(__pyx_v_m_idx) lastprivate(__pyx_v_m_idx) lastprivate(__pyx_v_psi1_2) lastprivate(__pyx_v_muZhat) lastprivate(__pyx_v_psi2_denom) lastprivate(__pyx_v_dpsicov_local)
                     #endif /* _OPENMP */
                     for (__pyx_t_8 = 0; __pyx_t_8 < __pyx_t_9; __pyx_t_8++){
                         {
                             __pyx_v_m_idx = 0 + 1 * __pyx_t_8;
                             /* Initialize private variables to invalid values */
+                            __pyx_v_m1 = ((int)0xbad0bad0);
+                            __pyx_v_Snq = ((double)__PYX_NAN());
+                            __pyx_v_Z1mu = ((double)__PYX_NAN());
                             __pyx_v_Z1Z2 = ((double)__PYX_NAN());
-                            __pyx_v_dpsicov_local = ((double)__PYX_NAN());
-                            __pyx_v_Z1 = ((double)__PYX_NAN());
-                            __pyx_v_n = ((int)0xbad0bad0);
+                            __pyx_v_q = ((int)0xbad0bad0);
                             __pyx_v_psi1_denom = ((double)__PYX_NAN());
+                            __pyx_v_n = ((int)0xbad0bad0);
                             __pyx_v_mu_nq = ((double)__PYX_NAN());
                             __pyx_v_psi2n = ((double)__PYX_NAN());
                             __pyx_v_m2 = ((int)0xbad0bad0);
-                            __pyx_v_q = ((int)0xbad0bad0);
-                            __pyx_v_psi2_denom = ((double)__PYX_NAN());
+                            __pyx_v_l2q = ((double)__PYX_NAN());
+                            __pyx_v_Z1 = ((double)__PYX_NAN());
                             __pyx_v_dZ_mq = ((double)__PYX_NAN());
                             __pyx_v_psi1_1 = ((double)__PYX_NAN());
                             __pyx_v_Z2 = ((double)__PYX_NAN());
-                            __pyx_v_Snq = ((double)__PYX_NAN());
                             __pyx_v_psi1_2 = ((double)__PYX_NAN());
-                            __pyx_v_l2q = ((double)__PYX_NAN());
                             __pyx_v_muZhat = ((double)__PYX_NAN());
-                            __pyx_v_Z1mu = ((double)__PYX_NAN());
-                            __pyx_v_m1 = ((int)0xbad0bad0);
+                            __pyx_v_psi2_denom = ((double)__PYX_NAN());
+                            __pyx_v_dpsicov_local = ((double)__PYX_NAN());
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":193
  * 
@@ -4967,9 +4955,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *         l2q = l2[q]
  *         for n in range(N):
  */
-                            __pyx_t_52 = __pyx_v_m1;
-                            __pyx_t_53 = __pyx_v_q;
-                            __pyx_v_Z1 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_52 * __pyx_v_Z.strides[0]) ) + __pyx_t_53 * __pyx_v_Z.strides[1]) )));
+                            __pyx_t_46 = __pyx_v_m1;
+                            __pyx_t_47 = __pyx_v_q;
+                            __pyx_v_Z1 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_46 * __pyx_v_Z.strides[0]) ) + __pyx_t_47 * __pyx_v_Z.strides[1]) )));
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":198
  *         dZ_mq = 0.
@@ -4978,8 +4966,8 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *         for n in range(N):
  *             mu_nq = mu[n,q]
  */
-                            __pyx_t_54 = __pyx_v_q;
-                            __pyx_v_l2q = (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_54 * __pyx_v_l2.strides[0]) )));
+                            __pyx_t_48 = __pyx_v_q;
+                            __pyx_v_l2q = (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_48 * __pyx_v_l2.strides[0]) )));
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":199
  *         Z1 = Z[m1,q]
@@ -4988,9 +4976,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *             mu_nq = mu[n,q]
  *             Snq = S[n,q]
  */
-                            __pyx_t_21 = __pyx_v_N;
-                            for (__pyx_t_22 = 0; __pyx_t_22 < __pyx_t_21; __pyx_t_22+=1) {
-                              __pyx_v_n = __pyx_t_22;
+                            __pyx_t_15 = __pyx_v_N;
+                            for (__pyx_t_16 = 0; __pyx_t_16 < __pyx_t_15; __pyx_t_16+=1) {
+                              __pyx_v_n = __pyx_t_16;
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":200
  *         l2q = l2[q]
@@ -4999,9 +4987,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *             Snq = S[n,q]
  *             psi1_denom = Snq + l2q
  */
-                              __pyx_t_55 = __pyx_v_n;
-                              __pyx_t_56 = __pyx_v_q;
-                              __pyx_v_mu_nq = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_mu.data + __pyx_t_55 * __pyx_v_mu.strides[0]) ) + __pyx_t_56 * __pyx_v_mu.strides[1]) )));
+                              __pyx_t_49 = __pyx_v_n;
+                              __pyx_t_50 = __pyx_v_q;
+                              __pyx_v_mu_nq = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_mu.data + __pyx_t_49 * __pyx_v_mu.strides[0]) ) + __pyx_t_50 * __pyx_v_mu.strides[1]) )));
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":201
  *         for n in range(N):
@@ -5010,9 +4998,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *             psi1_denom = Snq + l2q
  *             psi2_denom = 2.*Snq+l2q
  */
-                              __pyx_t_57 = __pyx_v_n;
-                              __pyx_t_58 = __pyx_v_q;
-                              __pyx_v_Snq = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_57 * __pyx_v_S.strides[0]) ) + __pyx_t_58 * __pyx_v_S.strides[1]) )));
+                              __pyx_t_51 = __pyx_v_n;
+                              __pyx_t_52 = __pyx_v_q;
+                              __pyx_v_Snq = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_51 * __pyx_v_S.strides[0]) ) + __pyx_t_52 * __pyx_v_S.strides[1]) )));
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":202
  *             mu_nq = mu[n,q]
@@ -5039,9 +5027,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  * 
  *             for m2 in range(M):
  */
-                              __pyx_t_59 = __pyx_v_n;
-                              __pyx_t_60 = __pyx_v_m1;
-                              __pyx_v_psi1_1 = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_59 * __pyx_v_psi1.strides[0]) ) + __pyx_t_60 * __pyx_v_psi1.strides[1]) ))) / __pyx_v_psi1_denom);
+                              __pyx_t_53 = __pyx_v_n;
+                              __pyx_t_54 = __pyx_v_m1;
+                              __pyx_v_psi1_1 = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_53 * __pyx_v_psi1.strides[0]) ) + __pyx_t_54 * __pyx_v_psi1.strides[1]) ))) / __pyx_v_psi1_denom);
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":206
  *             psi1_1 = psi1[n,m1]/psi1_denom
@@ -5050,9 +5038,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *                 dpsicov_local = dpsicov[m1,m2] + dpsicov[m2,m1]
  * 
  */
-                              __pyx_t_28 = __pyx_v_M;
-                              for (__pyx_t_61 = 0; __pyx_t_61 < __pyx_t_28; __pyx_t_61+=1) {
-                                __pyx_v_m2 = __pyx_t_61;
+                              __pyx_t_22 = __pyx_v_M;
+                              for (__pyx_t_55 = 0; __pyx_t_55 < __pyx_t_22; __pyx_t_55+=1) {
+                                __pyx_v_m2 = __pyx_t_55;
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":207
  * 
@@ -5061,11 +5049,11 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  * 
  *                 Z2 = Z[m2,q]
  */
-                                __pyx_t_62 = __pyx_v_m1;
-                                __pyx_t_63 = __pyx_v_m2;
-                                __pyx_t_64 = __pyx_v_m2;
-                                __pyx_t_65 = __pyx_v_m1;
-                                __pyx_v_dpsicov_local = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_62 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_63 * __pyx_v_dpsicov.strides[1]) ))) + (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_64 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_65 * __pyx_v_dpsicov.strides[1]) ))));
+                                __pyx_t_56 = __pyx_v_m1;
+                                __pyx_t_57 = __pyx_v_m2;
+                                __pyx_t_58 = __pyx_v_m2;
+                                __pyx_t_59 = __pyx_v_m1;
+                                __pyx_v_dpsicov_local = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_56 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_57 * __pyx_v_dpsicov.strides[1]) ))) + (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_58 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_59 * __pyx_v_dpsicov.strides[1]) ))));
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":209
  *                 dpsicov_local = dpsicov[m1,m2] + dpsicov[m2,m1]
@@ -5074,9 +5062,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *                 psi1_2 = psi1_1*psi1[n,m2]
  *                 psi2n = psi2[n,m1,m2]
  */
-                                __pyx_t_66 = __pyx_v_m2;
-                                __pyx_t_67 = __pyx_v_q;
-                                __pyx_v_Z2 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_66 * __pyx_v_Z.strides[0]) ) + __pyx_t_67 * __pyx_v_Z.strides[1]) )));
+                                __pyx_t_60 = __pyx_v_m2;
+                                __pyx_t_61 = __pyx_v_q;
+                                __pyx_v_Z2 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_60 * __pyx_v_Z.strides[0]) ) + __pyx_t_61 * __pyx_v_Z.strides[1]) )));
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":210
  * 
@@ -5085,9 +5073,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  *                 psi2n = psi2[n,m1,m2]
  * 
  */
-                                __pyx_t_68 = __pyx_v_n;
-                                __pyx_t_69 = __pyx_v_m2;
-                                __pyx_v_psi1_2 = (__pyx_v_psi1_1 * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_68 * __pyx_v_psi1.strides[0]) ) + __pyx_t_69 * __pyx_v_psi1.strides[1]) ))));
+                                __pyx_t_62 = __pyx_v_n;
+                                __pyx_t_63 = __pyx_v_m2;
+                                __pyx_v_psi1_2 = (__pyx_v_psi1_1 * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_62 * __pyx_v_psi1.strides[0]) ) + __pyx_t_63 * __pyx_v_psi1.strides[1]) ))));
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":211
  *                 Z2 = Z[m2,q]
@@ -5096,10 +5084,10 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  * 
  *                 Z1Z2 = Z1 - Z2
  */
-                                __pyx_t_70 = __pyx_v_n;
-                                __pyx_t_71 = __pyx_v_m1;
-                                __pyx_t_72 = __pyx_v_m2;
-                                __pyx_v_psi2n = (*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_70 * __pyx_v_psi2.strides[0]) ) + __pyx_t_71 * __pyx_v_psi2.strides[1]) ) + __pyx_t_72 * __pyx_v_psi2.strides[2]) )));
+                                __pyx_t_64 = __pyx_v_n;
+                                __pyx_t_65 = __pyx_v_m1;
+                                __pyx_t_66 = __pyx_v_m2;
+                                __pyx_v_psi2n = (*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_64 * __pyx_v_psi2.strides[0]) ) + __pyx_t_65 * __pyx_v_psi2.strides[1]) ) + __pyx_t_66 * __pyx_v_psi2.strides[2]) )));
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":213
  *                 psi2n = psi2[n,m1,m2]
@@ -5146,9 +5134,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_10update_psicov
  * 
  * def update_psicovn_der(double [:,:,:] dpsicov, double [:,:] psi1, double [:,:,:] psi2, double [:] l2, double [:,:] Z, double [:,:] mu, double [:,:] S,
  */
-                            __pyx_t_73 = __pyx_v_m1;
-                            __pyx_t_74 = __pyx_v_q;
-                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dZ.data + __pyx_t_73 * __pyx_v_dZ.strides[0]) ) + __pyx_t_74 * __pyx_v_dZ.strides[1]) )) += __pyx_v_dZ_mq;
+                            __pyx_t_67 = __pyx_v_m1;
+                            __pyx_t_68 = __pyx_v_q;
+                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dZ.data + __pyx_t_67 * __pyx_v_dZ.strides[0]) ) + __pyx_t_68 * __pyx_v_dZ.strides[1]) )) += __pyx_v_dZ_mq;
                         }
                     }
                 }
@@ -5419,21 +5407,21 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
   Py_ssize_t __pyx_t_12;
   Py_ssize_t __pyx_t_13;
   Py_ssize_t __pyx_t_14;
-  Py_ssize_t __pyx_t_15;
-  Py_ssize_t __pyx_t_16;
+  int __pyx_t_15;
+  int __pyx_t_16;
   Py_ssize_t __pyx_t_17;
   Py_ssize_t __pyx_t_18;
   Py_ssize_t __pyx_t_19;
   Py_ssize_t __pyx_t_20;
-  int __pyx_t_21;
+  long __pyx_t_21;
   int __pyx_t_22;
-  Py_ssize_t __pyx_t_23;
+  int __pyx_t_23;
   Py_ssize_t __pyx_t_24;
   Py_ssize_t __pyx_t_25;
   Py_ssize_t __pyx_t_26;
-  long __pyx_t_27;
-  int __pyx_t_28;
-  int __pyx_t_29;
+  Py_ssize_t __pyx_t_27;
+  Py_ssize_t __pyx_t_28;
+  Py_ssize_t __pyx_t_29;
   Py_ssize_t __pyx_t_30;
   Py_ssize_t __pyx_t_31;
   Py_ssize_t __pyx_t_32;
@@ -5462,13 +5450,13 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
   Py_ssize_t __pyx_t_55;
   Py_ssize_t __pyx_t_56;
   Py_ssize_t __pyx_t_57;
-  Py_ssize_t __pyx_t_58;
+  int __pyx_t_58;
   Py_ssize_t __pyx_t_59;
   Py_ssize_t __pyx_t_60;
   Py_ssize_t __pyx_t_61;
   Py_ssize_t __pyx_t_62;
   Py_ssize_t __pyx_t_63;
-  int __pyx_t_64;
+  Py_ssize_t __pyx_t_64;
   Py_ssize_t __pyx_t_65;
   Py_ssize_t __pyx_t_66;
   Py_ssize_t __pyx_t_67;
@@ -5478,12 +5466,6 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
   Py_ssize_t __pyx_t_71;
   Py_ssize_t __pyx_t_72;
   Py_ssize_t __pyx_t_73;
-  Py_ssize_t __pyx_t_74;
-  Py_ssize_t __pyx_t_75;
-  Py_ssize_t __pyx_t_76;
-  Py_ssize_t __pyx_t_77;
-  Py_ssize_t __pyx_t_78;
-  Py_ssize_t __pyx_t_79;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -5608,11 +5590,11 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
             if (__pyx_t_9 > 0)
             {
                 #ifdef _OPENMP
-                #pragma omp parallel private(__pyx_t_38, __pyx_t_47, __pyx_t_23, __pyx_t_26, __pyx_t_50, __pyx_t_13, __pyx_t_48, __pyx_t_27, __pyx_t_29, __pyx_t_41, __pyx_t_20, __pyx_t_14, __pyx_t_19, __pyx_t_35, __pyx_t_42, __pyx_t_21, __pyx_t_12, __pyx_t_37, __pyx_t_49, __pyx_t_24, __pyx_t_11, __pyx_t_22, __pyx_t_18, __pyx_t_34, __pyx_t_31, __pyx_t_43, __pyx_t_17, __pyx_t_44, __pyx_t_36, __pyx_t_25, __pyx_t_10, __pyx_t_15, __pyx_t_39, __pyx_t_46, __pyx_t_51, __pyx_t_32, __pyx_t_30, __pyx_t_28, __pyx_t_16, __pyx_t_33, __pyx_t_45, __pyx_t_40)
+                #pragma omp parallel private(__pyx_t_38, __pyx_t_26, __pyx_t_28, __pyx_t_13, __pyx_t_32, __pyx_t_41, __pyx_t_21, __pyx_t_19, __pyx_t_35, __pyx_t_42, __pyx_t_27, __pyx_t_29, __pyx_t_12, __pyx_t_37, __pyx_t_15, __pyx_t_14, __pyx_t_22, __pyx_t_24, __pyx_t_18, __pyx_t_34, __pyx_t_31, __pyx_t_43, __pyx_t_23, __pyx_t_11, __pyx_t_17, __pyx_t_44, __pyx_t_36, __pyx_t_25, __pyx_t_16, __pyx_t_10, __pyx_t_39, __pyx_t_30, __pyx_t_20, __pyx_t_33, __pyx_t_45, __pyx_t_40)
                 #endif /* _OPENMP */
                 {
                     #ifdef _OPENMP
-                    #pragma omp for lastprivate(__pyx_v_m1) lastprivate(__pyx_v_mu_nq) lastprivate(__pyx_v_dmu_nq) lastprivate(__pyx_v_q) lastprivate(__pyx_v_n) lastprivate(__pyx_v_psi2n) lastprivate(__pyx_v_psi1_denom) lastprivate(__pyx_v_psi1_2) lastprivate(__pyx_v_psi1_1) lastprivate(__pyx_v_Z2mu) lastprivate(__pyx_v_dpsicov_local) lastprivate(__pyx_v_l2q) lastprivate(__pyx_v_Z1Z2) lastprivate(__pyx_v_Snq_l2q) lastprivate(__pyx_v_Snq) lastprivate(__pyx_v_Z1mu) lastprivate(__pyx_v_psi2_denom) lastprivate(__pyx_v_Z1mu2Z2mu2_denom) lastprivate(__pyx_v_muZhat2_denom) lastprivate(__pyx_v_muZhat) lastprivate(__pyx_v_dS_nq) firstprivate(__pyx_v_nq_idx) lastprivate(__pyx_v_nq_idx) lastprivate(__pyx_v_dl2_nq) lastprivate(__pyx_v_Z2) lastprivate(__pyx_v_m2) lastprivate(__pyx_v_Z1)
+                    #pragma omp for lastprivate(__pyx_v_m1) lastprivate(__pyx_v_mu_nq) lastprivate(__pyx_v_dmu_nq) lastprivate(__pyx_v_q) lastprivate(__pyx_v_n) lastprivate(__pyx_v_psi2n) lastprivate(__pyx_v_psi1_denom) lastprivate(__pyx_v_psi1_2) lastprivate(__pyx_v_dS_nq) lastprivate(__pyx_v_psi1_1) lastprivate(__pyx_v_Z2mu) lastprivate(__pyx_v_dpsicov_local) lastprivate(__pyx_v_l2q) lastprivate(__pyx_v_Snq_l2q) lastprivate(__pyx_v_Snq) lastprivate(__pyx_v_Z1mu) lastprivate(__pyx_v_psi2_denom) lastprivate(__pyx_v_Z1mu2Z2mu2_denom) lastprivate(__pyx_v_muZhat2_denom) lastprivate(__pyx_v_muZhat) lastprivate(__pyx_v_Z1Z2) firstprivate(__pyx_v_nq_idx) lastprivate(__pyx_v_nq_idx) lastprivate(__pyx_v_dl2_nq) lastprivate(__pyx_v_Z2) lastprivate(__pyx_v_m2) lastprivate(__pyx_v_Z1)
                     #endif /* _OPENMP */
                     for (__pyx_t_8 = 0; __pyx_t_8 < __pyx_t_9; __pyx_t_8++){
                         {
@@ -5626,11 +5608,11 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
                             __pyx_v_psi2n = ((double)__PYX_NAN());
                             __pyx_v_psi1_denom = ((double)__PYX_NAN());
                             __pyx_v_psi1_2 = ((double)__PYX_NAN());
+                            __pyx_v_dS_nq = ((double)__PYX_NAN());
                             __pyx_v_psi1_1 = ((double)__PYX_NAN());
                             __pyx_v_Z2mu = ((double)__PYX_NAN());
                             __pyx_v_dpsicov_local = ((double)__PYX_NAN());
                             __pyx_v_l2q = ((double)__PYX_NAN());
-                            __pyx_v_Z1Z2 = ((double)__PYX_NAN());
                             __pyx_v_Snq_l2q = ((double)__PYX_NAN());
                             __pyx_v_Snq = ((double)__PYX_NAN());
                             __pyx_v_Z1mu = ((double)__PYX_NAN());
@@ -5638,7 +5620,7 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
                             __pyx_v_Z1mu2Z2mu2_denom = ((double)__PYX_NAN());
                             __pyx_v_muZhat2_denom = ((double)__PYX_NAN());
                             __pyx_v_muZhat = ((double)__PYX_NAN());
-                            __pyx_v_dS_nq = ((double)__PYX_NAN());
+                            __pyx_v_Z1Z2 = ((double)__PYX_NAN());
                             __pyx_v_dl2_nq = ((double)__PYX_NAN());
                             __pyx_v_Z2 = ((double)__PYX_NAN());
                             __pyx_v_m2 = ((int)0xbad0bad0);
@@ -5678,7 +5660,7 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *         mu_nq = mu[n,q]
  *         Snq = S[n,q]             # <<<<<<<<<<<<<<
  *         l2q = l2[q]
- *         psi2_denom = 2.*S[n,q]+l2[q]
+ *         psi2_denom = 2.*Snq+l2q
  */
                             __pyx_t_12 = __pyx_v_n;
                             __pyx_t_13 = __pyx_v_q;
@@ -5688,8 +5670,8 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *         mu_nq = mu[n,q]
  *         Snq = S[n,q]
  *         l2q = l2[q]             # <<<<<<<<<<<<<<
- *         psi2_denom = 2.*S[n,q]+l2[q]
- *         psi1_denom = S[n,q] + l2[q]
+ *         psi2_denom = 2.*Snq+l2q
+ *         psi1_denom = Snq + l2q
  */
                             __pyx_t_14 = __pyx_v_q;
                             __pyx_v_l2q = (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_14 * __pyx_v_l2.strides[0]) )));
@@ -5697,30 +5679,24 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":239
  *         Snq = S[n,q]
  *         l2q = l2[q]
- *         psi2_denom = 2.*S[n,q]+l2[q]             # <<<<<<<<<<<<<<
- *         psi1_denom = S[n,q] + l2[q]
+ *         psi2_denom = 2.*Snq+l2q             # <<<<<<<<<<<<<<
+ *         psi1_denom = Snq + l2q
  *         Snq_l2q = Snq/l2q
  */
-                            __pyx_t_15 = __pyx_v_n;
-                            __pyx_t_16 = __pyx_v_q;
-                            __pyx_t_17 = __pyx_v_q;
-                            __pyx_v_psi2_denom = ((2. * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_15 * __pyx_v_S.strides[0]) ) + __pyx_t_16 * __pyx_v_S.strides[1]) )))) + (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_17 * __pyx_v_l2.strides[0]) ))));
+                            __pyx_v_psi2_denom = ((2. * __pyx_v_Snq) + __pyx_v_l2q);
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":240
  *         l2q = l2[q]
- *         psi2_denom = 2.*S[n,q]+l2[q]
- *         psi1_denom = S[n,q] + l2[q]             # <<<<<<<<<<<<<<
+ *         psi2_denom = 2.*Snq+l2q
+ *         psi1_denom = Snq + l2q             # <<<<<<<<<<<<<<
  *         Snq_l2q = Snq/l2q
  * 
  */
-                            __pyx_t_18 = __pyx_v_n;
-                            __pyx_t_19 = __pyx_v_q;
-                            __pyx_t_20 = __pyx_v_q;
-                            __pyx_v_psi1_denom = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_18 * __pyx_v_S.strides[0]) ) + __pyx_t_19 * __pyx_v_S.strides[1]) ))) + (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_20 * __pyx_v_l2.strides[0]) ))));
+                            __pyx_v_psi1_denom = (__pyx_v_Snq + __pyx_v_l2q);
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":241
- *         psi2_denom = 2.*S[n,q]+l2[q]
- *         psi1_denom = S[n,q] + l2[q]
+ *         psi2_denom = 2.*Snq+l2q
+ *         psi1_denom = Snq + l2q
  *         Snq_l2q = Snq/l2q             # <<<<<<<<<<<<<<
  * 
  *         dmu_nq = 0.
@@ -5761,9 +5737,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *             Z1 = Z[m1,q]
  *             psi1_1 = psi1[n,m1]/psi1_denom
  */
-                            __pyx_t_21 = __pyx_v_M;
-                            for (__pyx_t_22 = 0; __pyx_t_22 < __pyx_t_21; __pyx_t_22+=1) {
-                              __pyx_v_m1 = __pyx_t_22;
+                            __pyx_t_15 = __pyx_v_M;
+                            for (__pyx_t_16 = 0; __pyx_t_16 < __pyx_t_15; __pyx_t_16+=1) {
+                              __pyx_v_m1 = __pyx_t_16;
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":248
  * 
@@ -5772,9 +5748,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *             psi1_1 = psi1[n,m1]/psi1_denom
  *             Z1mu = Z1 - mu_nq
  */
-                              __pyx_t_23 = __pyx_v_m1;
-                              __pyx_t_24 = __pyx_v_q;
-                              __pyx_v_Z1 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_23 * __pyx_v_Z.strides[0]) ) + __pyx_t_24 * __pyx_v_Z.strides[1]) )));
+                              __pyx_t_17 = __pyx_v_m1;
+                              __pyx_t_18 = __pyx_v_q;
+                              __pyx_v_Z1 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_17 * __pyx_v_Z.strides[0]) ) + __pyx_t_18 * __pyx_v_Z.strides[1]) )));
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":249
  *         for m1 in range(M):
@@ -5783,9 +5759,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *             Z1mu = Z1 - mu_nq
  * 
  */
-                              __pyx_t_25 = __pyx_v_n;
-                              __pyx_t_26 = __pyx_v_m1;
-                              __pyx_v_psi1_1 = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_25 * __pyx_v_psi1.strides[0]) ) + __pyx_t_26 * __pyx_v_psi1.strides[1]) ))) / __pyx_v_psi1_denom);
+                              __pyx_t_19 = __pyx_v_n;
+                              __pyx_t_20 = __pyx_v_m1;
+                              __pyx_v_psi1_1 = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_19 * __pyx_v_psi1.strides[0]) ) + __pyx_t_20 * __pyx_v_psi1.strides[1]) ))) / __pyx_v_psi1_denom);
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":250
  *             Z1 = Z[m1,q]
@@ -5803,9 +5779,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *                 if m1!=m2:
  *                     dpsicov_local = dpsicov[n,m1,m2] +  dpsicov[n,m2,m1]
  */
-                              __pyx_t_27 = (__pyx_v_m1 + 1);
-                              for (__pyx_t_28 = 0; __pyx_t_28 < __pyx_t_27; __pyx_t_28+=1) {
-                                __pyx_v_m2 = __pyx_t_28;
+                              __pyx_t_21 = (__pyx_v_m1 + 1);
+                              for (__pyx_t_22 = 0; __pyx_t_22 < __pyx_t_21; __pyx_t_22+=1) {
+                                __pyx_v_m2 = __pyx_t_22;
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":253
  * 
@@ -5814,8 +5790,8 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *                     dpsicov_local = dpsicov[n,m1,m2] +  dpsicov[n,m2,m1]
  *                 else:
  */
-                                __pyx_t_29 = ((__pyx_v_m1 != __pyx_v_m2) != 0);
-                                if (__pyx_t_29) {
+                                __pyx_t_23 = ((__pyx_v_m1 != __pyx_v_m2) != 0);
+                                if (__pyx_t_23) {
 
                                   /* "GPy/kern/src/psi_comp/rbf_cython.pyx":254
  *             for m2 in range(m1+1):
@@ -5824,13 +5800,13 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *                 else:
  *                     dpsicov_local = dpsicov[n,m1,m2]
  */
-                                  __pyx_t_30 = __pyx_v_n;
-                                  __pyx_t_31 = __pyx_v_m1;
-                                  __pyx_t_32 = __pyx_v_m2;
-                                  __pyx_t_33 = __pyx_v_n;
-                                  __pyx_t_34 = __pyx_v_m2;
-                                  __pyx_t_35 = __pyx_v_m1;
-                                  __pyx_v_dpsicov_local = ((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_30 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_31 * __pyx_v_dpsicov.strides[1]) ) + __pyx_t_32 * __pyx_v_dpsicov.strides[2]) ))) + (*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_33 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_34 * __pyx_v_dpsicov.strides[1]) ) + __pyx_t_35 * __pyx_v_dpsicov.strides[2]) ))));
+                                  __pyx_t_24 = __pyx_v_n;
+                                  __pyx_t_25 = __pyx_v_m1;
+                                  __pyx_t_26 = __pyx_v_m2;
+                                  __pyx_t_27 = __pyx_v_n;
+                                  __pyx_t_28 = __pyx_v_m2;
+                                  __pyx_t_29 = __pyx_v_m1;
+                                  __pyx_v_dpsicov_local = ((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_24 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_25 * __pyx_v_dpsicov.strides[1]) ) + __pyx_t_26 * __pyx_v_dpsicov.strides[2]) ))) + (*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_27 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_28 * __pyx_v_dpsicov.strides[1]) ) + __pyx_t_29 * __pyx_v_dpsicov.strides[2]) ))));
 
                                   /* "GPy/kern/src/psi_comp/rbf_cython.pyx":253
  * 
@@ -5850,10 +5826,10 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *                 psi1_2 = psi1_1*psi1[n,m2]
  */
                                 /*else*/ {
-                                  __pyx_t_36 = __pyx_v_n;
-                                  __pyx_t_37 = __pyx_v_m1;
-                                  __pyx_t_38 = __pyx_v_m2;
-                                  __pyx_v_dpsicov_local = (*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_36 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_37 * __pyx_v_dpsicov.strides[1]) ) + __pyx_t_38 * __pyx_v_dpsicov.strides[2]) )));
+                                  __pyx_t_30 = __pyx_v_n;
+                                  __pyx_t_31 = __pyx_v_m1;
+                                  __pyx_t_32 = __pyx_v_m2;
+                                  __pyx_v_dpsicov_local = (*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_30 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_31 * __pyx_v_dpsicov.strides[1]) ) + __pyx_t_32 * __pyx_v_dpsicov.strides[2]) )));
                                 }
                                 __pyx_L14:;
 
@@ -5864,9 +5840,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *                 psi1_2 = psi1_1*psi1[n,m2]
  *                 psi2n = psi2[n,m1,m2]/psi2_denom
  */
-                                __pyx_t_39 = __pyx_v_m2;
-                                __pyx_t_40 = __pyx_v_q;
-                                __pyx_v_Z2 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_39 * __pyx_v_Z.strides[0]) ) + __pyx_t_40 * __pyx_v_Z.strides[1]) )));
+                                __pyx_t_33 = __pyx_v_m2;
+                                __pyx_t_34 = __pyx_v_q;
+                                __pyx_v_Z2 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_33 * __pyx_v_Z.strides[0]) ) + __pyx_t_34 * __pyx_v_Z.strides[1]) )));
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":258
  *                     dpsicov_local = dpsicov[n,m1,m2]
@@ -5875,9 +5851,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *                 psi2n = psi2[n,m1,m2]/psi2_denom
  * 
  */
-                                __pyx_t_41 = __pyx_v_n;
-                                __pyx_t_42 = __pyx_v_m2;
-                                __pyx_v_psi1_2 = (__pyx_v_psi1_1 * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_41 * __pyx_v_psi1.strides[0]) ) + __pyx_t_42 * __pyx_v_psi1.strides[1]) ))));
+                                __pyx_t_35 = __pyx_v_n;
+                                __pyx_t_36 = __pyx_v_m2;
+                                __pyx_v_psi1_2 = (__pyx_v_psi1_1 * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_35 * __pyx_v_psi1.strides[0]) ) + __pyx_t_36 * __pyx_v_psi1.strides[1]) ))));
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":259
  *                 Z2 = Z[m2,q]
@@ -5886,10 +5862,10 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  * 
  *                 Z1Z2 = Z1 - Z2
  */
-                                __pyx_t_43 = __pyx_v_n;
-                                __pyx_t_44 = __pyx_v_m1;
-                                __pyx_t_45 = __pyx_v_m2;
-                                __pyx_v_psi2n = ((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_43 * __pyx_v_psi2.strides[0]) ) + __pyx_t_44 * __pyx_v_psi2.strides[1]) ) + __pyx_t_45 * __pyx_v_psi2.strides[2]) ))) / __pyx_v_psi2_denom);
+                                __pyx_t_37 = __pyx_v_n;
+                                __pyx_t_38 = __pyx_v_m1;
+                                __pyx_t_39 = __pyx_v_m2;
+                                __pyx_v_psi2n = ((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_37 * __pyx_v_psi2.strides[0]) ) + __pyx_t_38 * __pyx_v_psi2.strides[1]) ) + __pyx_t_39 * __pyx_v_psi2.strides[2]) ))) / __pyx_v_psi2_denom);
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":261
  *                 psi2n = psi2[n,m1,m2]/psi2_denom
@@ -5972,9 +5948,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *         dS[n,q] += dS_nq
  *         dl2_n[q,n] = dl2_nq
  */
-                            __pyx_t_46 = __pyx_v_n;
-                            __pyx_t_47 = __pyx_v_q;
-                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dmu.data + __pyx_t_46 * __pyx_v_dmu.strides[0]) ) + __pyx_t_47 * __pyx_v_dmu.strides[1]) )) += __pyx_v_dmu_nq;
+                            __pyx_t_40 = __pyx_v_n;
+                            __pyx_t_41 = __pyx_v_q;
+                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dmu.data + __pyx_t_40 * __pyx_v_dmu.strides[0]) ) + __pyx_t_41 * __pyx_v_dmu.strides[1]) )) += __pyx_v_dmu_nq;
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":273
  * 
@@ -5983,9 +5959,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *         dl2_n[q,n] = dl2_nq
  * 
  */
-                            __pyx_t_48 = __pyx_v_n;
-                            __pyx_t_49 = __pyx_v_q;
-                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dS.data + __pyx_t_48 * __pyx_v_dS.strides[0]) ) + __pyx_t_49 * __pyx_v_dS.strides[1]) )) += __pyx_v_dS_nq;
+                            __pyx_t_42 = __pyx_v_n;
+                            __pyx_t_43 = __pyx_v_q;
+                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dS.data + __pyx_t_42 * __pyx_v_dS.strides[0]) ) + __pyx_t_43 * __pyx_v_dS.strides[1]) )) += __pyx_v_dS_nq;
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":274
  *         dmu[n,q] += dmu_nq
@@ -5994,9 +5970,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  * 
  *     for q in prange(Q, nogil=True):
  */
-                            __pyx_t_50 = __pyx_v_q;
-                            __pyx_t_51 = __pyx_v_n;
-                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dl2_n.data + __pyx_t_50 * __pyx_v_dl2_n.strides[0]) ) + __pyx_t_51 * __pyx_v_dl2_n.strides[1]) )) = __pyx_v_dl2_nq;
+                            __pyx_t_44 = __pyx_v_q;
+                            __pyx_t_45 = __pyx_v_n;
+                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dl2_n.data + __pyx_t_44 * __pyx_v_dl2_n.strides[0]) ) + __pyx_t_45 * __pyx_v_dl2_n.strides[1]) )) = __pyx_v_dl2_nq;
                         }
                     }
                 }
@@ -6054,7 +6030,7 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
             if (__pyx_t_7 > 0)
             {
                 #ifdef _OPENMP
-                #pragma omp parallel private(__pyx_t_52, __pyx_t_22, __pyx_t_21, __pyx_t_54, __pyx_t_53)
+                #pragma omp parallel private(__pyx_t_16, __pyx_t_47, __pyx_t_15, __pyx_t_48, __pyx_t_46)
                 #endif /* _OPENMP */
                 {
                     #ifdef _OPENMP
@@ -6083,9 +6059,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *             dl2_nq =dl2_nq+ dl2_n[q,n]
  *         dl2[q] += dl2_nq
  */
-                            __pyx_t_21 = __pyx_v_N;
-                            for (__pyx_t_22 = 0; __pyx_t_22 < __pyx_t_21; __pyx_t_22+=1) {
-                              __pyx_v_n = __pyx_t_22;
+                            __pyx_t_15 = __pyx_v_N;
+                            for (__pyx_t_16 = 0; __pyx_t_16 < __pyx_t_15; __pyx_t_16+=1) {
+                              __pyx_v_n = __pyx_t_16;
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":279
  *         dl2_nq = 0.
@@ -6094,9 +6070,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *         dl2[q] += dl2_nq
  * 
  */
-                              __pyx_t_52 = __pyx_v_q;
-                              __pyx_t_53 = __pyx_v_n;
-                              __pyx_v_dl2_nq = (__pyx_v_dl2_nq + (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dl2_n.data + __pyx_t_52 * __pyx_v_dl2_n.strides[0]) ) + __pyx_t_53 * __pyx_v_dl2_n.strides[1]) ))));
+                              __pyx_t_46 = __pyx_v_q;
+                              __pyx_t_47 = __pyx_v_n;
+                              __pyx_v_dl2_nq = (__pyx_v_dl2_nq + (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dl2_n.data + __pyx_t_46 * __pyx_v_dl2_n.strides[0]) ) + __pyx_t_47 * __pyx_v_dl2_n.strides[1]) ))));
                             }
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":280
@@ -6106,8 +6082,8 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  * 
  *     for m_idx in prange(M*Q, nogil=True):
  */
-                            __pyx_t_54 = __pyx_v_q;
-                            *((double *) ( /* dim=0 */ (__pyx_v_dl2.data + __pyx_t_54 * __pyx_v_dl2.strides[0]) )) += __pyx_v_dl2_nq;
+                            __pyx_t_48 = __pyx_v_q;
+                            *((double *) ( /* dim=0 */ (__pyx_v_dl2.data + __pyx_t_48 * __pyx_v_dl2.strides[0]) )) += __pyx_v_dl2_nq;
                         }
                     }
                 }
@@ -6165,35 +6141,35 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
             if (__pyx_t_9 > 0)
             {
                 #ifdef _OPENMP
-                #pragma omp parallel private(__pyx_t_76, __pyx_t_22, __pyx_t_62, __pyx_t_71, __pyx_t_65, __pyx_t_60, __pyx_t_58, __pyx_t_73, __pyx_t_68, __pyx_t_21, __pyx_t_78, __pyx_t_63, __pyx_t_56, __pyx_t_75, __pyx_t_79, __pyx_t_70, __pyx_t_55, __pyx_t_72, __pyx_t_69, __pyx_t_66, __pyx_t_74, __pyx_t_59, __pyx_t_61, __pyx_t_77, __pyx_t_57, __pyx_t_67, __pyx_t_28, __pyx_t_64)
+                #pragma omp parallel private(__pyx_t_58, __pyx_t_22, __pyx_t_62, __pyx_t_57, __pyx_t_65, __pyx_t_60, __pyx_t_55, __pyx_t_49, __pyx_t_68, __pyx_t_16, __pyx_t_50, __pyx_t_72, __pyx_t_63, __pyx_t_15, __pyx_t_56, __pyx_t_53, __pyx_t_70, __pyx_t_73, __pyx_t_54, __pyx_t_69, __pyx_t_66, __pyx_t_52, __pyx_t_59, __pyx_t_61, __pyx_t_51, __pyx_t_71, __pyx_t_67, __pyx_t_64)
                 #endif /* _OPENMP */
                 {
                     #ifdef _OPENMP
-                    #pragma omp for lastprivate(__pyx_v_m1) lastprivate(__pyx_v_mu_nq) lastprivate(__pyx_v_psi1_denom) lastprivate(__pyx_v_Snq) lastprivate(__pyx_v_muZhat) lastprivate(__pyx_v_psi1_2) lastprivate(__pyx_v_Z1) lastprivate(__pyx_v_l2q) lastprivate(__pyx_v_psi1_1) lastprivate(__pyx_v_q) lastprivate(__pyx_v_Z1Z2) lastprivate(__pyx_v_n) lastprivate(__pyx_v_dZ_mq) firstprivate(__pyx_v_m_idx) lastprivate(__pyx_v_m_idx) lastprivate(__pyx_v_m2) lastprivate(__pyx_v_Z2) lastprivate(__pyx_v_psi2n) lastprivate(__pyx_v_psi2_denom) lastprivate(__pyx_v_Z1mu) lastprivate(__pyx_v_dpsicov_local)
+                    #pragma omp for lastprivate(__pyx_v_m1) lastprivate(__pyx_v_psi1_denom) lastprivate(__pyx_v_dpsicov_local) lastprivate(__pyx_v_q) lastprivate(__pyx_v_psi1_2) lastprivate(__pyx_v_Z1) lastprivate(__pyx_v_Snq) lastprivate(__pyx_v_l2q) lastprivate(__pyx_v_psi1_1) lastprivate(__pyx_v_Z1Z2) lastprivate(__pyx_v_dZ_mq) lastprivate(__pyx_v_n) lastprivate(__pyx_v_Z1mu) firstprivate(__pyx_v_m_idx) lastprivate(__pyx_v_m_idx) lastprivate(__pyx_v_m2) lastprivate(__pyx_v_Z2) lastprivate(__pyx_v_psi2n) lastprivate(__pyx_v_psi2_denom) lastprivate(__pyx_v_muZhat) lastprivate(__pyx_v_mu_nq)
                     #endif /* _OPENMP */
                     for (__pyx_t_8 = 0; __pyx_t_8 < __pyx_t_9; __pyx_t_8++){
                         {
                             __pyx_v_m_idx = 0 + 1 * __pyx_t_8;
                             /* Initialize private variables to invalid values */
                             __pyx_v_m1 = ((int)0xbad0bad0);
-                            __pyx_v_mu_nq = ((double)__PYX_NAN());
                             __pyx_v_psi1_denom = ((double)__PYX_NAN());
-                            __pyx_v_Snq = ((double)__PYX_NAN());
-                            __pyx_v_muZhat = ((double)__PYX_NAN());
+                            __pyx_v_dpsicov_local = ((double)__PYX_NAN());
+                            __pyx_v_q = ((int)0xbad0bad0);
                             __pyx_v_psi1_2 = ((double)__PYX_NAN());
                             __pyx_v_Z1 = ((double)__PYX_NAN());
+                            __pyx_v_Snq = ((double)__PYX_NAN());
                             __pyx_v_l2q = ((double)__PYX_NAN());
                             __pyx_v_psi1_1 = ((double)__PYX_NAN());
-                            __pyx_v_q = ((int)0xbad0bad0);
                             __pyx_v_Z1Z2 = ((double)__PYX_NAN());
-                            __pyx_v_n = ((int)0xbad0bad0);
                             __pyx_v_dZ_mq = ((double)__PYX_NAN());
+                            __pyx_v_n = ((int)0xbad0bad0);
+                            __pyx_v_Z1mu = ((double)__PYX_NAN());
                             __pyx_v_m2 = ((int)0xbad0bad0);
                             __pyx_v_Z2 = ((double)__PYX_NAN());
                             __pyx_v_psi2n = ((double)__PYX_NAN());
                             __pyx_v_psi2_denom = ((double)__PYX_NAN());
-                            __pyx_v_Z1mu = ((double)__PYX_NAN());
-                            __pyx_v_dpsicov_local = ((double)__PYX_NAN());
+                            __pyx_v_muZhat = ((double)__PYX_NAN());
+                            __pyx_v_mu_nq = ((double)__PYX_NAN());
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":283
  * 
@@ -6229,9 +6205,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *         l2q = l2[q]
  *         for n in range(N):
  */
-                            __pyx_t_55 = __pyx_v_m1;
-                            __pyx_t_56 = __pyx_v_q;
-                            __pyx_v_Z1 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_55 * __pyx_v_Z.strides[0]) ) + __pyx_t_56 * __pyx_v_Z.strides[1]) )));
+                            __pyx_t_49 = __pyx_v_m1;
+                            __pyx_t_50 = __pyx_v_q;
+                            __pyx_v_Z1 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_49 * __pyx_v_Z.strides[0]) ) + __pyx_t_50 * __pyx_v_Z.strides[1]) )));
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":288
  *         dZ_mq = 0.
@@ -6240,8 +6216,8 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *         for n in range(N):
  *             mu_nq = mu[n,q]
  */
-                            __pyx_t_57 = __pyx_v_q;
-                            __pyx_v_l2q = (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_57 * __pyx_v_l2.strides[0]) )));
+                            __pyx_t_51 = __pyx_v_q;
+                            __pyx_v_l2q = (*((double *) ( /* dim=0 */ (__pyx_v_l2.data + __pyx_t_51 * __pyx_v_l2.strides[0]) )));
 
                             /* "GPy/kern/src/psi_comp/rbf_cython.pyx":289
  *         Z1 = Z[m1,q]
@@ -6250,9 +6226,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *             mu_nq = mu[n,q]
  *             Snq = S[n,q]
  */
-                            __pyx_t_21 = __pyx_v_N;
-                            for (__pyx_t_22 = 0; __pyx_t_22 < __pyx_t_21; __pyx_t_22+=1) {
-                              __pyx_v_n = __pyx_t_22;
+                            __pyx_t_15 = __pyx_v_N;
+                            for (__pyx_t_16 = 0; __pyx_t_16 < __pyx_t_15; __pyx_t_16+=1) {
+                              __pyx_v_n = __pyx_t_16;
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":290
  *         l2q = l2[q]
@@ -6261,9 +6237,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *             Snq = S[n,q]
  *             psi1_denom = Snq + l2q
  */
-                              __pyx_t_58 = __pyx_v_n;
-                              __pyx_t_59 = __pyx_v_q;
-                              __pyx_v_mu_nq = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_mu.data + __pyx_t_58 * __pyx_v_mu.strides[0]) ) + __pyx_t_59 * __pyx_v_mu.strides[1]) )));
+                              __pyx_t_52 = __pyx_v_n;
+                              __pyx_t_53 = __pyx_v_q;
+                              __pyx_v_mu_nq = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_mu.data + __pyx_t_52 * __pyx_v_mu.strides[0]) ) + __pyx_t_53 * __pyx_v_mu.strides[1]) )));
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":291
  *         for n in range(N):
@@ -6272,9 +6248,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *             psi1_denom = Snq + l2q
  *             psi2_denom = 2.*Snq+l2q
  */
-                              __pyx_t_60 = __pyx_v_n;
-                              __pyx_t_61 = __pyx_v_q;
-                              __pyx_v_Snq = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_60 * __pyx_v_S.strides[0]) ) + __pyx_t_61 * __pyx_v_S.strides[1]) )));
+                              __pyx_t_54 = __pyx_v_n;
+                              __pyx_t_55 = __pyx_v_q;
+                              __pyx_v_Snq = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_S.data + __pyx_t_54 * __pyx_v_S.strides[0]) ) + __pyx_t_55 * __pyx_v_S.strides[1]) )));
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":292
  *             mu_nq = mu[n,q]
@@ -6301,9 +6277,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  * 
  *             for m2 in range(M):
  */
-                              __pyx_t_62 = __pyx_v_n;
-                              __pyx_t_63 = __pyx_v_m1;
-                              __pyx_v_psi1_1 = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_62 * __pyx_v_psi1.strides[0]) ) + __pyx_t_63 * __pyx_v_psi1.strides[1]) ))) / __pyx_v_psi1_denom);
+                              __pyx_t_56 = __pyx_v_n;
+                              __pyx_t_57 = __pyx_v_m1;
+                              __pyx_v_psi1_1 = ((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_56 * __pyx_v_psi1.strides[0]) ) + __pyx_t_57 * __pyx_v_psi1.strides[1]) ))) / __pyx_v_psi1_denom);
 
                               /* "GPy/kern/src/psi_comp/rbf_cython.pyx":296
  *             psi1_1 = psi1[n,m1]/psi1_denom
@@ -6312,9 +6288,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *                 dpsicov_local = dpsicov[n,m1,m2] + dpsicov[n,m2,m1]
  * 
  */
-                              __pyx_t_28 = __pyx_v_M;
-                              for (__pyx_t_64 = 0; __pyx_t_64 < __pyx_t_28; __pyx_t_64+=1) {
-                                __pyx_v_m2 = __pyx_t_64;
+                              __pyx_t_22 = __pyx_v_M;
+                              for (__pyx_t_58 = 0; __pyx_t_58 < __pyx_t_22; __pyx_t_58+=1) {
+                                __pyx_v_m2 = __pyx_t_58;
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":297
  * 
@@ -6323,13 +6299,13 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  * 
  *                 Z2 = Z[m2,q]
  */
-                                __pyx_t_65 = __pyx_v_n;
-                                __pyx_t_66 = __pyx_v_m1;
-                                __pyx_t_67 = __pyx_v_m2;
-                                __pyx_t_68 = __pyx_v_n;
-                                __pyx_t_69 = __pyx_v_m2;
-                                __pyx_t_70 = __pyx_v_m1;
-                                __pyx_v_dpsicov_local = ((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_65 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_66 * __pyx_v_dpsicov.strides[1]) ) + __pyx_t_67 * __pyx_v_dpsicov.strides[2]) ))) + (*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_68 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_69 * __pyx_v_dpsicov.strides[1]) ) + __pyx_t_70 * __pyx_v_dpsicov.strides[2]) ))));
+                                __pyx_t_59 = __pyx_v_n;
+                                __pyx_t_60 = __pyx_v_m1;
+                                __pyx_t_61 = __pyx_v_m2;
+                                __pyx_t_62 = __pyx_v_n;
+                                __pyx_t_63 = __pyx_v_m2;
+                                __pyx_t_64 = __pyx_v_m1;
+                                __pyx_v_dpsicov_local = ((*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_59 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_60 * __pyx_v_dpsicov.strides[1]) ) + __pyx_t_61 * __pyx_v_dpsicov.strides[2]) ))) + (*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dpsicov.data + __pyx_t_62 * __pyx_v_dpsicov.strides[0]) ) + __pyx_t_63 * __pyx_v_dpsicov.strides[1]) ) + __pyx_t_64 * __pyx_v_dpsicov.strides[2]) ))));
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":299
  *                 dpsicov_local = dpsicov[n,m1,m2] + dpsicov[n,m2,m1]
@@ -6338,9 +6314,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *                 psi1_2 = psi1_1*psi1[n,m2]
  *                 psi2n = psi2[n,m1,m2]
  */
-                                __pyx_t_71 = __pyx_v_m2;
-                                __pyx_t_72 = __pyx_v_q;
-                                __pyx_v_Z2 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_71 * __pyx_v_Z.strides[0]) ) + __pyx_t_72 * __pyx_v_Z.strides[1]) )));
+                                __pyx_t_65 = __pyx_v_m2;
+                                __pyx_t_66 = __pyx_v_q;
+                                __pyx_v_Z2 = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Z.data + __pyx_t_65 * __pyx_v_Z.strides[0]) ) + __pyx_t_66 * __pyx_v_Z.strides[1]) )));
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":300
  * 
@@ -6349,9 +6325,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *                 psi2n = psi2[n,m1,m2]
  * 
  */
-                                __pyx_t_73 = __pyx_v_n;
-                                __pyx_t_74 = __pyx_v_m2;
-                                __pyx_v_psi1_2 = (__pyx_v_psi1_1 * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_73 * __pyx_v_psi1.strides[0]) ) + __pyx_t_74 * __pyx_v_psi1.strides[1]) ))));
+                                __pyx_t_67 = __pyx_v_n;
+                                __pyx_t_68 = __pyx_v_m2;
+                                __pyx_v_psi1_2 = (__pyx_v_psi1_1 * (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi1.data + __pyx_t_67 * __pyx_v_psi1.strides[0]) ) + __pyx_t_68 * __pyx_v_psi1.strides[1]) ))));
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":301
  *                 Z2 = Z[m2,q]
@@ -6360,10 +6336,10 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  * 
  *                 Z1Z2 = Z1 - Z2
  */
-                                __pyx_t_75 = __pyx_v_n;
-                                __pyx_t_76 = __pyx_v_m1;
-                                __pyx_t_77 = __pyx_v_m2;
-                                __pyx_v_psi2n = (*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_75 * __pyx_v_psi2.strides[0]) ) + __pyx_t_76 * __pyx_v_psi2.strides[1]) ) + __pyx_t_77 * __pyx_v_psi2.strides[2]) )));
+                                __pyx_t_69 = __pyx_v_n;
+                                __pyx_t_70 = __pyx_v_m1;
+                                __pyx_t_71 = __pyx_v_m2;
+                                __pyx_v_psi2n = (*((double *) ( /* dim=2 */ (( /* dim=1 */ (( /* dim=0 */ (__pyx_v_psi2.data + __pyx_t_69 * __pyx_v_psi2.strides[0]) ) + __pyx_t_70 * __pyx_v_psi2.strides[1]) ) + __pyx_t_71 * __pyx_v_psi2.strides[2]) )));
 
                                 /* "GPy/kern/src/psi_comp/rbf_cython.pyx":303
  *                 psi2n = psi2[n,m1,m2]
@@ -6407,9 +6383,9 @@ static PyObject *__pyx_pf_3GPy_4kern_3src_8psi_comp_10rbf_cython_12update_psicov
  *                 dZ_mq =dZ_mq + dpsicov_local*(psi2n*(muZhat/psi2_denom-Z1Z2/(2*l2q)) + psi1_2*Z1mu)
  *         dZ[m1,q] += dZ_mq             # <<<<<<<<<<<<<<
  */
-                            __pyx_t_78 = __pyx_v_m1;
-                            __pyx_t_79 = __pyx_v_q;
-                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dZ.data + __pyx_t_78 * __pyx_v_dZ.strides[0]) ) + __pyx_t_79 * __pyx_v_dZ.strides[1]) )) += __pyx_v_dZ_mq;
+                            __pyx_t_72 = __pyx_v_m1;
+                            __pyx_t_73 = __pyx_v_q;
+                            *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_dZ.data + __pyx_t_72 * __pyx_v_dZ.strides[0]) ) + __pyx_t_73 * __pyx_v_dZ.strides[1]) )) += __pyx_v_dZ_mq;
                         }
                     }
                 }
