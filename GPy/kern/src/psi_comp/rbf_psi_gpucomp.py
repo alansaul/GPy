@@ -514,10 +514,9 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
                              # grad
                              'grad_l_gpu'               :gpuarray.empty((Q,),np.float64, order='F'),
                              }
-        else:
-            assert N==self.gpuCache['mu_gpu'].shape[0]
-            assert M==self.gpuCache['Z_gpu'].shape[0]
-            assert Q==self.gpuCache['l2_gpu'].shape[0]
+        elif N!=self.gpuCache['mu_gpu'].shape[0] or M!=self.gpuCache['Z_gpu'].shape[0] or Q!=self.gpuCache['l2_gpu'].shape[0]:
+            self.gpuCache = None
+            self._initGPUCache(N,M,Q)
     
     def sync_params(self, lengthscale, Z, mu, S):
         if len(lengthscale)==1:
