@@ -70,8 +70,8 @@ class PSICOMP_RBF_Cython(PSICOMP_RBF):
         
     @Cache_this(limit=10, ignore_args=(0,2,3,4))
     def psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        self._psicomputations(kern, Z, variational_posterior, dL_dpsi2.ndim==3)
-        psi1 = self.cache['psi1']
+        psi1 = self._psicomputations(kern, Z, variational_posterior, dL_dpsi2.ndim==3)[1]
+        # psi1 = self.cache['psi1']
         if dL_dpsi2.ndim==2:
             dL_dpsi1 += psi1.dot(dL_dpsi2+dL_dpsi2.T)
         else:
@@ -80,14 +80,15 @@ class PSICOMP_RBF_Cython(PSICOMP_RBF):
 
     @Cache_this(limit=10, ignore_args=(0,2,3,4))
     def psiDerivativecomputations_psicov(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
-        self._psicomputations(kern, Z, variational_posterior, dL_dpsicov.ndim==3)
+        _,psi1, psi2, psicov = self._psicomputations(kern, Z, variational_posterior, dL_dpsicov.ndim==3)
         from .rbf_cython import update_psi1_der, update_psicov_der, update_psicovn_der
         variance, lengthscale = float(kern.variance), kern.lengthscale
         ARD = (len(lengthscale)!=1)
         N,M,Q = self.get_dimensions(Z, variational_posterior)
         mu, S = variational_posterior.mean, variational_posterior.variance
         l2 = self.cache['l2']
-        psi1, psi2, psicov = self.cache['psi1'], self.cache['psi2'], self.cache['psicov']
+        # psi1, psi2, psicov = self.cache['psi1'], self.cache['psi2'], self.cache['psicov']
+        assert dL_dpsicov.shape==psicov.shape
 
         dpsi1 = psi1*dL_dpsi1
         dL_dvar = np.sum(dL_dpsi0) + dpsi1.sum()/variance + (dL_dpsicov*psicov).sum()*2./variance
