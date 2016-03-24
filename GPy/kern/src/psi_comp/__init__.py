@@ -53,7 +53,7 @@ class PSICOMP_Linear(PSICOMP):
         else:
             raise ValueError("unknown distriubtion received for psi-statistics")
 
-    @Cache_this(limit=10, ignore_args=(0,2,3,4))
+    @Cache_this(limit=3, ignore_args=(0,2,3,4))
     def psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         variances = kern.variances
         if isinstance(variational_posterior, variational.NormalPosterior):

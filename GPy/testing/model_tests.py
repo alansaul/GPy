@@ -157,6 +157,7 @@ class MiscTests(unittest.TestCase):
         # Not easy to check if woodbury_inv is correct in itself as it requires a large derivation and expression
         Kinv = m.posterior.woodbury_inv
         K_hat = k.K(self.X_new) - k.K(self.X_new, Z).dot(Kinv).dot(k.K(Z, self.X_new))
+        K_hat = np.clip(K_hat, 1e-15, np.inf)
 
         mu, covar = m._raw_predict(self.X_new, full_cov=True)
         self.assertEquals(mu.shape, (self.N_new, self.D))
@@ -553,14 +554,25 @@ class GradientTests(np.testing.TestCase):
         rbflin = GPy.kern.RBF(1) + GPy.kern.White(1)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=1, uncertain_inputs=1)
 
+
     def test_GPLVM_rbf_bias_white_kern_2D(self):
         """ Testing GPLVM with rbf + bias kernel """
         N, input_dim, D = 50, 1, 2
         X = np.random.rand(N, input_dim)
-        k = GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,))) + GPy.kern.Bias(input_dim, 0.1) + GPy.kern.White(input_dim, 0.05)
+        k = GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,))) + GPy.kern.Bias(input_dim, 0.1) + GPy.kern.White(input_dim, 0.05) + GPy.kern.Matern32(input_dim) + GPy.kern.Matern52(input_dim)
         K = k.K(X)
         Y = np.random.multivariate_normal(np.zeros(N), K, input_dim).T
         m = GPy.models.GPLVM(Y, input_dim, kernel=k)
+        self.assertTrue(m.checkgrad())
+
+    def test_SparseGPLVM_rbf_bias_white_kern_2D(self):
+        """ Testing GPLVM with rbf + bias kernel """
+        N, input_dim, D = 50, 1, 2
+        X = np.random.rand(N, input_dim)
+        k = GPy.kern.RBF(input_dim, 0.5, 0.9 * np.ones((1,))) + GPy.kern.Bias(input_dim, 0.1) + GPy.kern.White(input_dim, 0.05) + GPy.kern.Matern32(input_dim) + GPy.kern.Matern52(input_dim)
+        K = k.K(X)
+        Y = np.random.multivariate_normal(np.zeros(N), K, input_dim).T
+        m = GPy.models.SparseGPLVM(Y, input_dim, kernel=k)
         self.assertTrue(m.checkgrad())
 
     def test_BCGPLVM_rbf_bias_white_kern_2D(self):
@@ -704,7 +716,19 @@ class GradientTests(np.testing.TestCase):
         lik = GPy.likelihoods.Gaussian()
         m = GPy.models.GPVariationalGaussianApproximation(X, Y, kernel=kern, likelihood=lik)
         self.assertTrue(m.checkgrad())
-
+        
+    def test_ssgplvm(self):
+        from GPy import kern
+        from GPy.models import SSGPLVM
+        from GPy.examples.dimensionality_reduction import _simulate_matern
+    
+        D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
+        _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, False)
+        Y = Ylist[0]
+        k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
+        # k = kern.RBF(Q, ARD=True, lengthscale=10.)
+        m = SSGPLVM(Y, Q, init="rand", num_inducing=num_inducing, kernel=k, group_spike=True)
+        self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":
     print("Running unit tests, please be (very) patient...")

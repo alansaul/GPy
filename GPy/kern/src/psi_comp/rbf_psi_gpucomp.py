@@ -585,11 +585,20 @@ class PSICOMP_RBF_GPU(PSICOMP_RBF):
             else:
                 return psi0, psi1_gpu.get(), psi2n_gpu.get() if return_n else psi2n_gpu.get().sum(0)
 
+<<<<<<< HEAD
     @Cache_this(limit=10, ignore_args=(0,2,3,4))
     def psiDerivativecomputations_psicov(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
         from pycuda import gpuarray
         
         psicov_NMM = len(dL_dpsicov.shape)==3
+=======
+    @Cache_this(limit=3, ignore_args=(0,2,3,4))
+    def _psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+        # resolve the requirement of dL_dpsi2 to be symmetric
+        if len(dL_dpsi2.shape)==2: dL_dpsi2 = (dL_dpsi2+dL_dpsi2.T)/2
+        else: dL_dpsi2  = (dL_dpsi2+ np.swapaxes(dL_dpsi2, 1,2))/2
+    
+>>>>>>> 5c53bc45e2356f7a9ea14134848f0711250f51fb
         variance, lengthscale = kern.variance, kern.lengthscale
         from ....util.linalg_gpu import sum_axis
         ARD = (len(lengthscale)!=1)

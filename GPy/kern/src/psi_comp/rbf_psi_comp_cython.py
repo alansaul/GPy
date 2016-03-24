@@ -31,14 +31,15 @@ class PSICOMP_RBF_Cython(PSICOMP_RBF):
         from .rbf_cython import comp_logpsi1, comp_logpsi2, comp_psicov, comp_psicovn
 
         N,M,Q = self.get_dimensions(Z, variational_posterior)
-        self._initCache(N, M, Q)
-        l2 = self.cache['l2']
-        psi1, psi2, logdenom = self.cache['psi1'], self.cache['psi2'], self.cache['logdenom']
+#         self._initCache(N, M, Q)
+#         psi1, psi2, logdenom = self.cache['psi1'], self.cache['psi2'], self.cache['logdenom']
+        psi1, psi2, logdenom = np.empty((N,M)), np.empty((N,M,M)),  np.empty((N,))
 
         variance, lengthscale = float(kern.variance), kern.lengthscale
         mu = variational_posterior.mean
         S = variational_posterior.variance
 
+        l2 = np.empty((Q,))
         l2[:] = np.square(lengthscale)
         psi0 = np.empty(N)
         psi0[:] = variance
@@ -55,7 +56,7 @@ class PSICOMP_RBF_Cython(PSICOMP_RBF):
         psi2 *= variance*variance
         np.exp(psi1, psi1)
         psi1 *= variance
-        self.cache['psicov'] = psicov
+#         self.cache['psicov'] = psicov
         return psi0, psi1, psi2, psicov
 
     def psicomputations(self, kern, Z, variational_posterior, return_psicov=False, return_n=False):
@@ -71,7 +72,6 @@ class PSICOMP_RBF_Cython(PSICOMP_RBF):
     @Cache_this(limit=10, ignore_args=(0,2,3,4))
     def psiDerivativecomputations(self, kern, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         psi1 = self._psicomputations(kern, Z, variational_posterior, dL_dpsi2.ndim==3)[1]
-        # psi1 = self.cache['psi1']
         if dL_dpsi2.ndim==2:
             dL_dpsi1 += psi1.dot(dL_dpsi2+dL_dpsi2.T)
         else:
@@ -86,8 +86,8 @@ class PSICOMP_RBF_Cython(PSICOMP_RBF):
         ARD = (len(lengthscale)!=1)
         N,M,Q = self.get_dimensions(Z, variational_posterior)
         mu, S = variational_posterior.mean, variational_posterior.variance
-        l2 = self.cache['l2']
-        # psi1, psi2, psicov = self.cache['psi1'], self.cache['psi2'], self.cache['psicov']
+        l2 = np.empty((Q,))
+        l2[:] = np.square(lengthscale)
         assert dL_dpsicov.shape==psicov.shape
 
         dpsi1 = psi1*dL_dpsi1
