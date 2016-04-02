@@ -32,13 +32,10 @@ class Static(Kern):
     def gradients_XX_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
-    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         return np.zeros(Z.shape)
 
-    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
-        from GPy.models.ss_gplvm import SpikeAndSlabPosterior
-        if isinstance(variational_posterior, SpikeAndSlabPosterior):
-            return np.zeros(variational_posterior.shape), np.zeros(variational_posterior.shape), np.zeros(variational_posterior.shape)
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         return np.zeros(variational_posterior.shape), np.zeros(variational_posterior.shape)
 
     def psi0(self, Z, variational_posterior):

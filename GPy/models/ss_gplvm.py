@@ -11,21 +11,6 @@ from GPy.core.parameterization.variational import SpikeAndSlabPrior, SpikeAndSla
 from ..inference.latent_function_inference.var_dtc_parallel import update_gradients, VarDTC_minibatch
 from ..kern.src.psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF_GPU
 
-class MaskedNormalPrior(VariationalPrior):
-    def __init__(self, mask, name='maskedNormalPrior', **kw):
-        super(MaskedNormalPrior, self).__init__(name=name, **kw)
-        self.mask = mask
-    
-    def KL_divergence(self, variational_posterior):
-        var_mean = (np.square(variational_posterior.mean)*self.mask).sum()
-        var_S = ((variational_posterior.variance - np.log(variational_posterior.variance))*self.mask).sum()
-        return 0.5 * (var_mean + var_S) - 0.5 * np.sum(self.mask)
-
-    def update_gradients_KL(self, variational_posterior):
-        # dL:
-        variational_posterior.mean.gradient -= variational_posterior.mean
-        variational_posterior.variance.gradient -= (1. - (1. / (variational_posterior.variance))) * 0.5
-
 class IBPPosterior(SpikeAndSlabPosterior):
     '''
     The SpikeAndSlab distribution for variational approximations.
@@ -167,33 +152,23 @@ class SLVMPrior(VariationalPrior):
         
         var_mean = np.square(mu)/self.variance
         var_S = (S/self.variance - np.log(S))
-        KL_X = ((np.log(self.variance)-1. +var_mean + var_S)).sum()/2.
+        part1 = (gamma* (np.log(self.variance)-1. +var_mean + var_S)).sum()/2.
         
-        from scipy.special import betaln,digamma
-        dgamma_a = digamma(tau[:,0])
-        dgamma_b = digamma(tau[:,1])
-        dgamma_ab = digamma(tau.sum(1))
+        from scipy.special import betaln,digamma            
+        part2 = (gamma*np.log(gamma)).sum() + ((1.-gamma)*np.log(1.-gamma)).sum() + betaln(self.alpha,self.beta)*self.input_dim \
+                -betaln(tau[:,0], tau[:,1]).sum() + ((tau[:,0]-(gamma*self.Z).sum(0)-self.alpha)*digamma(tau[:,0])).sum() + \
+                ((tau[:,1]-((1-gamma)*self.Z).sum(0)-self.beta)*digamma(tau[:,1])).sum() + ((self.Z.sum(0)+self.alpha+self.beta-tau[:,0]-tau[:,1])*digamma(tau.sum(axis=1))).sum()        
 
-        if self.Z is not None:
-            KL_b = (self.Z*gamma*np.log(gamma)).sum() + (self.Z*(1.-gamma)*np.log(1.-gamma)).sum() - (self.Z*gamma*dgamma_a).sum() - (self.Z*(1-gamma)*dgamma_b).sum() + (self.Z*dgamma_ab).sum()
-        else:
-            KL_b = (gamma*np.log(gamma)).sum() + ((1.-gamma)*np.log(1.-gamma)).sum() - (gamma*dgamma_a).sum() - ((1-gamma)*dgamma_b).sum() + (dgamma_ab).sum()
-        KL_pi = (-(self.alpha - tau[:,0])*dgamma_a -(self.beta - tau[:,1])*dgamma_b + (self.alpha+self.beta - tau.sum(1))*dgamma_ab - betaln(tau[:,0],tau[:,1]) +betaln(self.alpha, self.beta)).sum()
-
-        # part2 = (gamma*np.log(gamma)).sum() + ((1.-gamma)*np.log(1.-gamma)).sum() + betaln(self.alpha,self.beta)*self.input_dim \
-        #         -betaln(tau[:,0], tau[:,1]).sum() + ((tau[:,0]-(gamma*self.Z).sum(0)-self.alpha)*digamma(tau[:,0])).sum() + \
-        #         ((tau[:,1]-((1-gamma)*self.Z).sum(0)-self.beta)*digamma(tau[:,1])).sum() + ((self.Z.sum(0)+self.alpha+self.beta-tau[:,0]-tau[:,1])*digamma(tau.sum(axis=1))).sum()        
-
-        return KL_X + KL_b + KL_pi
+        return part1+part2
 
     def update_gradients_KL(self, variational_posterior):
         mu, S, gamma, tau = variational_posterior.mean.values, variational_posterior.variance.values, variational_posterior.gamma.values, variational_posterior.tau.values
 
-        variational_posterior.mean.gradient -= mu/self.variance
-        variational_posterior.variance.gradient -= (1./self.variance - 1./S) /2.
+        variational_posterior.mean.gradient -= gamma*mu/self.variance
+        variational_posterior.variance.gradient -= (1./self.variance - 1./S) * gamma /2.
         from scipy.special import digamma,polygamma
         dgamma = np.log(gamma/(1.-gamma))+ (digamma(tau[:,1])-digamma(tau[:,0]))*self.Z
-        variational_posterior.binary_prob.gradient -= dgamma*self.Z
+        variational_posterior.binary_prob.gradient -= dgamma+((np.square(mu)+S)/self.variance-np.log(S)+np.log(self.variance)-1.)/2.
         common = (self.Z.sum(0)+self.alpha+self.beta-tau[:,0]-tau[:,1])*polygamma(1,tau.sum(axis=1))
         variational_posterior.tau.gradient[:,0] = -((tau[:,0]-(gamma*self.Z).sum(0)-self.alpha)*polygamma(1,tau[:,0])+common)
         variational_posterior.tau.gradient[:,1] = -((tau[:,1]-((1-gamma)*self.Z).sum(0)-self.beta)*polygamma(1,tau[:,1])+common)
@@ -269,9 +244,7 @@ class SSGPLVM(SparseGP_MPI):
         
     def set_X_gradients(self, X, X_grad):
         """Set the gradients of the posterior distribution of X in its specific form."""
-        X.mean.gradient = X_grad[0]
-        X.variance.gradient = X_grad[1]
-        X.binary_prob.gradient = X_grad[2]
+        X.mean.gradient, X.variance.gradient, X.binary_prob.gradient = X_grad
     
     def get_X_gradients(self, X):
         """Get the gradients of the posterior distribution of X in its specific form."""
