@@ -3,26 +3,12 @@ from paramz.caching import Cache_this
 from . import PSICOMP_RBF
 
 class PSICOMP_RBF_Cython(PSICOMP_RBF):
-
-    def __init__(self):
-        self.cache = None
         
     def __deepcopy__(self, memo):
         s = PSICOMP_RBF_Cython()
         memo[id(self)] = s 
         return s
-    
-    def _initCache(self, N, M, Q):
-        if self.cache is None or self.cache['N'] != N or self.cache['M'] !=M or self.cache['Q'] !=Q:
-            self.cache = {  'N':N,
-                            'M':M,
-                            'Q':Q,
-                            'l2': np.empty((Q,)),
-                            'logdenom': np.empty((N,)),
-                            'psi1': np.empty((N,M)),
-                            'psi2': np.empty((N,M,M)),
-                         }
-        
+            
     def get_dimensions(self, Z, variational_posterior):
         return variational_posterior.mean.shape[0], Z.shape[0], Z.shape[1]
 
@@ -31,8 +17,6 @@ class PSICOMP_RBF_Cython(PSICOMP_RBF):
         from .rbf_cython import comp_logpsi1, comp_logpsi2, comp_psicov, comp_psicovn
 
         N,M,Q = self.get_dimensions(Z, variational_posterior)
-#         self._initCache(N, M, Q)
-#         psi1, psi2, logdenom = self.cache['psi1'], self.cache['psi2'], self.cache['logdenom']
         psi1, psi2, logdenom = np.empty((N,M)), np.empty((N,M,M)),  np.empty((N,))
 
         variance, lengthscale = float(kern.variance), kern.lengthscale
