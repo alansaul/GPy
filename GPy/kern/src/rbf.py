@@ -47,12 +47,15 @@ class RBF(Stationary):
     def __getstate__(self):
         dc = super(RBF, self).__getstate__()
         if self.useGPU:
-            dc['psicomp'] = PSICOMP_RBF()
+            if self.use_psicov:
+                from .psi_comp import PSICOMP_RBF_Cython
+                dc['psicomp'] = PSICOMP_RBF_Cython()
+            else:
+                dc['psicomp'] = PSICOMP_RBF()
             dc['useGPU'] = False
         return dc
 
     def __setstate__(self, state):
-        self.use_invLengthscale = False
         return super(RBF, self).__setstate__(state)
 
     def spectrum(self, omega):
