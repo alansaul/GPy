@@ -21,6 +21,7 @@ class RBF(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='rbf', useGPU=False, inv_l=False, psicov=False):
         super(RBF, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name, useGPU=useGPU)
         self.use_psicov = psicov
+        self.return_n = False
         if self.useGPU:
             self.psicomp = PSICOMP_RBF_GPU()
         elif psicov:
@@ -67,16 +68,20 @@ class RBF(Stationary):
     #---------------------------------------#
 
     def psi0(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psicov=self.use_psicov)[0]
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psicov=self.use_psicov, return_n=self.return_n)[0]
     def psi1(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psicov=self.use_psicov)[1]
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psicov=self.use_psicov, return_n=self.return_n)[1]
     def psi2(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self, Z, variational_posterior)[2]
+        self.return_n = False
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_n=False)[2]
     def psi2n(self, Z, variational_posterior):
+        self.return_n = True
         return self.psicomp.psicomputations(self, Z, variational_posterior, return_n=True)[2]
     def psicov(self, Z, variational_posterior):
-        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psicov=True)[2]
+        self.return_n = False
+        return self.psicomp.psicomputations(self, Z, variational_posterior, return_psicov=True, return_n=False)[2]
     def psicovn(self, Z, variational_posterior):
+        self.return_n = True
         return self.psicomp.psicomputations(self, Z, variational_posterior, return_psicov=True, return_n=True)[2]
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
