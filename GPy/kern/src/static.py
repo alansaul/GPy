@@ -6,6 +6,7 @@ from .kern import Kern
 import numpy as np
 from ...core.parameterization import Param
 from paramz.transformations import Logexp
+from ...util.linalg import tdot
 
 class Static(Kern):
     def __init__(self, input_dim, variance, active_dims, name):
@@ -31,10 +32,10 @@ class Static(Kern):
     def gradients_XX_diag(self, dL_dKdiag, X):
         return np.zeros(X.shape)
 
-    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_Z_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         return np.zeros(Z.shape)
 
-    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
+    def gradients_qX_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior, dpsicov=False):
         return np.zeros(variational_posterior.shape), np.zeros(variational_posterior.shape)
 
     def psi0(self, Z, variational_posterior):
@@ -45,13 +46,33 @@ class Static(Kern):
 
     def psi2(self, Z, variational_posterior):
         K = self.K(variational_posterior.mean, Z)
-        return np.einsum('ij,ik->jk',K,K) #K[:,:,None]*K[:,None,:] # NB. more efficient implementations on inherriting classes
+        return tdot(K.T)
+
+    def psi2n(self, Z, variational_posterior):
+        K = self.K(variational_posterior.mean, Z)
+        return K[:,:,None]*K[:,None,:]
 
     def input_sensitivity(self, summarize=True):
         if summarize:
             return super(Static, self).input_sensitivity(summarize=summarize)
         else:
             return np.ones(self.input_dim) * self.variance
+
+    def psicov(self, Z, variational_posterior):
+        return np.zeros(Z.shape[0],Z.shape[0])
+
+    def psicovn(self, Z, variational_posterior):
+        return np.zeros(variational_posterior.shape[0],Z.shape[0],Z.shape[0])
+
+
+    def update_gradients_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        pass
+
+    def gradients_Z_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        return np.zeros(Z.shape)
+
+    def gradients_qX_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        return np.zeros(variational_posterior.shape), np.zeros(variational_posterior.shape)
 
 class White(Static):
     def __init__(self, input_dim, variance=1., active_dims=None, name='white'):
@@ -80,6 +101,9 @@ class White(Static):
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum()
+
+    def update_gradients_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        self.update_gradients_expectations(dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)
 
 class WhiteHeteroscedastic(Static):
     def __init__(self, input_dim, num_data, variance=1., active_dims=None, name='white_hetero'):
@@ -161,6 +185,9 @@ class Bias(Static):
             self.variance.gradient = (dL_dpsi0.sum() + dL_dpsi1.sum()
                                     + 2.*self.variance*dL_dpsi2.sum())
 
+    def update_gradients_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        self.variance.gradient = (dL_dpsi0.sum() + dL_dpsi1.sum())
+
 class Fixed(Static):
     def __init__(self, input_dim, covariance_matrix, variance=1., active_dims=None, name='fixed'):
         """
@@ -191,4 +218,7 @@ class Fixed(Static):
 
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum()
+
+    def update_gradients_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        self.update_gradients_expectations(dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)
 

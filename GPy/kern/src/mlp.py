@@ -81,7 +81,7 @@ class MLP(Kern):
         return self._comp_grads(dL_dK, X, X2)[3]
 
     def gradients_X_X2(self, dL_dK, X, X2):
-        """Derivative of the covariance matrix with respect to X"""
+        """Derivative of the covariance matrix with respect to X and X2"""
         return self._comp_grads(dL_dK, X, X2)[3:]
 
     def gradients_X_diag(self, dL_dKdiag, X):

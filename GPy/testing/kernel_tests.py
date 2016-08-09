@@ -5,12 +5,12 @@ import unittest
 import numpy as np
 import GPy
 from GPy.core.parameterization.param import Param
-from ..util.config import config
+from GPy.util.config import config
 
 verbose = 0
 
 try:
-    from ..util import linalg_cython
+    from GPy.util import linalg_cython
     config.set('cython', 'working', 'True')
 except ImportError:
     config.set('cython', 'working', 'False')
@@ -313,6 +313,11 @@ class KernelGradientTestsContinuous(unittest.TestCase):
         k = GPy.kern.RBF(self.D, ARD=True)
         k.randomize()
         self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
+        
+    def test_AddRBF(self):
+        k = GPy.kern.AdditiveRBF(self.D, ARD=True, sep_var=True)
+        k.randomize()
+        self.assertTrue(check_kernel_gradient_functions(k, X=self.X, X2=self.X2, verbose=verbose))
 
     def test_Linear(self):
         k = GPy.kern.Linear(self.D)
@@ -497,15 +502,13 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
         self.w1 = np.random.randn(N)
         self.w2 = np.random.randn(N,M)
         self.w3 = np.random.randn(M,M)
-        self.w3 = self.w3#+self.w3.T
         self.w3n = np.random.randn(N,M,M)
-        self.w3n = self.w3n+np.swapaxes(self.w3n, 1,2)
 
     def test_kernels(self):
         from GPy.kern import RBF,Linear,MLP,Bias,White
         Q = self.Z.shape[1]
-        kernels = [RBF(Q,ARD=True), Linear(Q,ARD=True),MLP(Q,ARD=True), RBF(Q,ARD=True)+Linear(Q,ARD=True)+Bias(Q)+White(Q)
-                  ,RBF(Q,ARD=True)+Bias(Q)+White(Q),  Linear(Q,ARD=True)+Bias(Q)+White(Q)]
+        kernels =[RBF(Q,ARD=True, psicov=True), RBF(Q,ARD=True), Linear(Q,ARD=True),MLP(Q,ARD=True), RBF(Q,ARD=True)+Linear(Q,ARD=True)+Bias(Q)+White(Q)
+                ,RBF(Q,ARD=True)+Bias(Q)+White(Q),  Linear(Q,ARD=True)+Bias(Q)+White(Q)]
 
         for k in kernels:
             k.randomize()
@@ -515,6 +518,48 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
             self._test_kernel_param(k, psi2n=True)
             self._test_Z(k, psi2n=True)
             self._test_qX(k, psi2n=True)
+            
+    def test_psicov(self):
+        
+        from GPy.kern import RBF
+        Q = self.Z.shape[1]
+        kern = RBF(Q,ARD=True, variance= 0.3, lengthscale=0.7)
+        psicov = kern.psicov(self.Z, self.qX)
+        psicovn = kern.psicovn(self.Z, self.qX)
+        psi2 = kern.psi2(self.Z, self.qX)
+        psi2n = kern.psi2n(self.Z, self.qX)
+        psi1 = kern.psi1(self.Z, self.qX)
+        self.assertTrue(np.allclose(psicov, psi2-psi1.T.dot(psi1)))
+        self.assertTrue(np.allclose(psicovn, psi2n-psi1[:,:,None]*psi1[:,None,:]))
+
+    def test_psicov_cython(self):
+        
+        from GPy.kern import RBF
+        Q = self.Z.shape[1]
+        kern = RBF(Q,ARD=True, psicov=True, variance= 0.3, lengthscale=0.7)
+        psicov = kern.psicov(self.Z, self.qX)
+        psicovn = kern.psicovn(self.Z, self.qX)
+        psi2 = kern.psi2(self.Z, self.qX)
+        psi2n = kern.psi2n(self.Z, self.qX)
+        psi1 = kern.psi1(self.Z, self.qX)
+        self.assertTrue(np.allclose(psicov, psi2-psi1.T.dot(psi1)))
+        self.assertTrue(np.allclose(psicovn, psi2n-psi1[:,:,None]*psi1[:,None,:]))
+
+    def test_rbf_psicomp_cython(self):
+        from GPy.kern import RBF
+        Q = self.Z.shape[1]
+        kern = RBF(Q,ARD=True, variance= 0.3, lengthscale=0.7)
+
+        from GPy.kern.src.psi_comp import PSICOMP_RBF, PSICOMP_RBF_Cython
+        psicomp1 = PSICOMP_RBF()
+        psicomp2 = PSICOMP_RBF_Cython()
+
+        for return_psicov in [True, False]:
+            for return_n in [True, False]:
+                rs1 = psicomp1.psicomputations(kern, self.Z, self.qX, return_psicov, return_n)
+                rs2 = psicomp2.psicomputations(kern, self.Z, self.qX, return_psicov, return_n)
+                comp = [np.allclose(r1,r2) for r1, r2 in zip(rs1, rs2)]
+                self.assertTrue(np.all(comp))
 
     def _test_kernel_param(self, kernel, psi2n=False):
 
@@ -531,12 +576,12 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
 
         def df(p):
             kernel.param_array[:] = p
-            kernel.update_gradients_expectations(self.w1, self.w2, self.w3 if not psi2n else self.w3n, self.Z, self.qX)
+            kernel.update_gradients_expectations(self.w1.copy(), self.w2.copy(), self.w3.copy() if not psi2n else self.w3n.copy(), self.Z, self.qX)
             return kernel.gradient.copy()
 
         from GPy.models import GradientChecker
         m = GradientChecker(f, df, kernel.param_array.copy())
-        m.checkgrad(verbose=1)
+        # self.assertTrue(m.checkgrad(verbose=1))
         self.assertTrue(m.checkgrad())
 
     def _test_Z(self, kernel, psi2n=False):
@@ -544,7 +589,6 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
         def f(p):
             psi0 = kernel.psi0(p, self.qX)
             psi1 = kernel.psi1(p, self.qX)
-            psi2 = kernel.psi2(p, self.qX)
             if not psi2n:
                 psi2 = kernel.psi2(p, self.qX)
                 return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3*psi2).sum()
@@ -553,10 +597,11 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
                 return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3n*psi2).sum()
 
         def df(p):
-            return kernel.gradients_Z_expectations(self.w1, self.w2, self.w3 if not psi2n else self.w3n, p, self.qX)
+            return kernel.gradients_Z_expectations(self.w1.copy(), self.w2.copy(), self.w3.copy() if not psi2n else self.w3n.copy(), p, self.qX)
 
         from GPy.models import GradientChecker
         m = GradientChecker(f, df, self.Z.copy())
+        # m.checkgrad(verbose=1)
         self.assertTrue(m.checkgrad())
 
     def _test_qX(self, kernel, psi2n=False):
@@ -576,12 +621,115 @@ class Kernel_Psi_statistics_GradientTests(unittest.TestCase):
         def df(p):
             self.qX.param_array[:] = p
             self.qX._trigger_params_changed()
-            grad =  kernel.gradients_qX_expectations(self.w1, self.w2, self.w3 if not psi2n else self.w3n, self.Z, self.qX)
+            grad =  kernel.gradients_qX_expectations(self.w1.copy(), self.w2.copy(), self.w3.copy() if not psi2n else self.w3n.copy(), self.Z, self.qX)
             self.qX.set_gradients(grad)
             return self.qX.gradient.copy()
 
         from GPy.models import GradientChecker
         m = GradientChecker(f, df, self.qX.param_array.copy())
+        # m.checkgrad(verbose=1)
+        self.assertTrue(m.checkgrad())
+
+class Kernel_Psi_statistics_psicov_GradientTests(unittest.TestCase):
+
+    def setUp(self):
+        from GPy.core.parameterization.variational import NormalPosterior
+        N,M,Q = 100,20,3
+
+        X = np.random.randn(N,Q)
+        X_var = np.random.rand(N,Q)+0.01
+        self.Z = np.random.randn(M,Q)
+        self.qX = NormalPosterior(X, X_var)
+
+        self.w1 = np.random.randn(N)
+        self.w2 = np.random.randn(N,M)
+        self.w3 = np.random.randn(M,M)
+        self.w3n = np.random.randn(N,M,M)
+
+    def test_kernels(self):
+        from GPy.kern import RBF,Bias,White
+        Q = self.Z.shape[1]
+        kernels = [RBF(Q,ARD=True, psicov=True),RBF(Q,ARD=False, psicov=True),RBF(Q,ARD=True, psicov=True)+Bias(Q)+White(Q)]
+
+        for k in kernels:
+            k.randomize()
+            self._test_kernel_param(k)
+            self._test_Z(k)
+            self._test_qX(k)
+            self._test_kernel_param(k, psi2n=True)
+            self._test_Z(k, psi2n=True)
+            self._test_qX(k, psi2n=True)
+            
+    def _test_kernel_param(self, kernel, psi2n=False):
+
+        def f(p):
+            kernel.param_array[:] = p
+            psi0 = kernel.psi0(self.Z, self.qX)
+            psi1 = kernel.psi1(self.Z, self.qX)
+            if not psi2n:
+                psicov = kernel.psicov(self.Z, self.qX)
+                return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3*psicov).sum()
+            else:
+                psicov = kernel.psicovn(self.Z, self.qX)
+                return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3n*psicov).sum()
+            
+        def df(p):
+            kernel.param_array[:] = p
+            kernel.update_gradients_expectations_psicov(self.w1.copy(), self.w2.copy(), self.w3.copy() if not psi2n else self.w3n.copy(), self.Z, self.qX)
+            return kernel.gradient.copy()
+
+        from GPy.models import GradientChecker
+        m = GradientChecker(f, df, kernel.param_array.copy())
+        # m.checkgrad(verbose=1)
+        self.assertTrue(m.checkgrad())
+
+    def _test_Z(self, kernel, psi2n=False):
+
+        def f(p):
+            psi0 = kernel.psi0(p, self.qX)
+            psi1 = kernel.psi1(p, self.qX)
+            if not psi2n:
+                psicov = kernel.psicov(p, self.qX)
+                return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3*psicov).sum()
+            else:
+                psicov = kernel.psicovn(p, self.qX)
+                return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3n*psicov).sum()
+
+        def df(p):
+            return kernel.gradients_Z_expectations_psicov(self.w1.copy(), self.w2.copy(), self.w3.copy() if not psi2n else self.w3n.copy(), p, self.qX)
+
+        from GPy.models import GradientChecker
+        f(self.Z.copy())
+        m = GradientChecker(f, df, self.Z.copy())
+#         m.checkgrad(verbose=1)
+        self.assertTrue(m.checkgrad())
+
+    def _test_qX(self, kernel, psi2n=False):
+
+        def f(p):
+            self.qX.param_array[:] = p
+            self.qX._trigger_params_changed()
+            psi0 = kernel.psi0(self.Z, self.qX)
+            psi1 = kernel.psi1(self.Z, self.qX)
+            if not psi2n:
+                psicov = kernel.psicov(self.Z, self.qX)
+                return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3*psicov).sum()
+            else:
+                psicov = kernel.psicovn(self.Z, self.qX)
+                return (self.w1*psi0).sum() + (self.w2*psi1).sum() + (self.w3n*psicov).sum()
+
+        def df(p):
+            self.qX.param_array[:] = p
+            self.qX._trigger_params_changed()
+            kernel.psicov(self.Z, self.qX)
+            grad =  kernel.gradients_qX_expectations_psicov(self.w1.copy(), self.w2.copy(), self.w3.copy() if not psi2n else self.w3n.copy(), self.Z, self.qX)
+            self.qX.set_gradients(grad)
+            return self.qX.gradient.copy()
+
+        from GPy.models import GradientChecker
+        f(self.qX.param_array.copy())
+        m = GradientChecker(f, df, self.qX.param_array.copy())
+#         m.checkgrad(verbose=1)
         self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ from .kern import Kern
 from ...core.parameterization import Param
 from paramz.transformations import Logexp
 from paramz.caching import Cache_this
+from ...util.linalg import tdot
 
 class Poly(Kern):
     """
@@ -30,7 +31,7 @@ class Poly(Kern):
     @Cache_this(limit=3)
     def _AB(self, X, X2=None):
         if X2 is None:
-            dot_prod = np.dot(X, X.T)
+            dot_prod = tdot(X)#np.dot(X, X.T)
         else:
             dot_prod = np.dot(X, X2.T)
         A = (self.scale * dot_prod) + self.bias
@@ -38,22 +39,40 @@ class Poly(Kern):
         return dot_prod, A, B
 
     def Kdiag(self, X):
-        return self.K(X).diagonal()#self.variance*(np.square(X).sum(1) + 1.)**self.order
+        return self.variance*(np.square(X).sum(1)*self.scale + self.bias)**self.order
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         dot_prod, A, B = self._AB(X, X2)
-        dK_dA = self.variance * self.order * A ** (self.order-1.)
+        dK_dA = self.variance*self.order* B/A #self.variance * self.order * A ** (self.order-1.)
         dL_dA = dL_dK * (dK_dA)
         self.scale.gradient = (dL_dA * dot_prod).sum()
         self.bias.gradient = dL_dA.sum()
         self.variance.gradient = np.sum(dL_dK * B)
-        #import ipdb;ipdb.set_trace()
 
     def update_gradients_diag(self, dL_dKdiag, X):
-        raise NotImplementedError
-
+        X2 = np.square(X).sum(1)
+        A = X2*self.scale + self.bias
+        K_diag = self.variance*(A)**self.order
+        dL_dA = dL_dKdiag*K_diag/A*self.order
+        self.scale.gradient = (dL_dA*X2).sum()
+        self.bias.gradient = (dL_dA).sum()
+        self.variance.gradient = (dL_dKdiag*K_diag).sum()/self.variance
+        
     def gradients_X(self, dL_dK, X, X2=None):
-        raise NotImplementedError
-
+        dot_prod, A, B = self._AB(X, X2)
+        dK_dA = self.variance*self.order* B/A 
+        dL_dA = dL_dK * dK_dA
+        if X2 is None:
+            dX = self.scale*(dL_dA+dL_dA.T).dot(X)
+        else:
+            dX = self.scale*dL_dA.dot(X2)
+        return dX
+        
     def gradients_X_diag(self, dL_dKdiag, X):
-        raise NotImplementedError
+        X2 = np.square(X).sum(1)
+        A = X2*self.scale + self.bias
+        K_diag = self.variance*(A)**self.order
+        dL_dA = dL_dKdiag*K_diag/A*self.order
+
+        dX = dL_dA[:,None]*self.scale*2*X
+        return dX

@@ -241,6 +241,41 @@ class Add(CombinationKernel):
             [np.add(target_grads[i],grads[i],target_grads[i]) for i in range(len(grads))]
         return target_grads
 
+    @Cache_this(limit=1, force_kwargs=['which_parts'])
+    def psicov(self, Z, variational_posterior):
+        from .static import Static
+        psicov = reduce(np.add, (p.psicov(Z, variational_posterior) for p in self.parts if not isinstance(p, Static)))
+        return psicov
+
+    @Cache_this(limit=1, force_kwargs=['which_parts'])
+    def psicovn(self, Z, variational_posterior):
+        from .static import Static
+        psicovn = reduce(np.add, (p.psicovn(Z, variational_posterior) for p in self.parts if not isinstance(p, Static)))
+        return psicovn
+
+    def update_gradients_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        
+        from .static import Static
+        for p in self.parts:
+            p.update_gradients_expectations_psicov(dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)
+
+    def gradients_Z_expectations_psicov(self, dL_psi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        from .static import Static
+        target = np.zeros(Z.shape)
+        for p in self.parts:
+            if isinstance(p, Static): continue
+            target += p.gradients_Z_expectations_psicov(dL_psi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)
+        return target
+
+    def gradients_qX_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
+        from .static import Static
+        target_grads = [np.zeros(v.shape) for v in variational_posterior.parameters]
+        for p in self.parameters:
+            if isinstance(p, Static): continue
+            grads = p.gradients_qX_expectations_psicov(dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)
+            [np.add(target_grads[i],grads[i],target_grads[i]) for i in range(len(grads))]
+        return target_grads
+
     #def add(self, other):
     #    parts = self.parts
     #    if 0:#isinstance(other, Add):
