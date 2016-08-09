@@ -24,7 +24,7 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, inference_method=None, likelihood=None,
                  name='bayesian gplvm', normalizer=None,
-                 missing_data=False, stochastic=False, batchsize=1):
+                 missing_data=False, stochastic=False, batchsize=1, Y_metadata=None):
         self.logger = logging.getLogger(self.__class__.__name__)
         if X is None:
             from ..util.initialization import initialize_latent
@@ -68,7 +68,7 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
                                            name=name, inference_method=inference_method,
                                            normalizer=normalizer,
                                            missing_data=missing_data, stochastic=stochastic,
-                                           batchsize=batchsize)
+                                           batchsize=batchsize, Y_metadata=Y_metadata)
         self.X = X
         self.link_parameter(self.X, 0)
 

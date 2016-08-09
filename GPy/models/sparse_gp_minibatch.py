@@ -266,7 +266,11 @@ class SparseGPMiniBatch(SparseGP):
             self._inner_take_over_or_update(self.full_values, grad_dict, value_indices)
             self._inner_values_update(grad_dict)  # What is this for? -> MRD
 
-            woodbury_inv[:, :, d] = posterior.woodbury_inv[:,:,None]
+            # woodbury_inv[:, :, d] = posterior.woodbury_inv[:,:,None] #  Bug in posterior as depending if covariance is provided or woodbury inv is provided, we get different shaped woodbury_inv's back!
+            post_woodbury_inv = posterior.woodbury_inv.copy()
+            if post_woodbury_inv.ndim == 2:
+                post_woodbury_inv = post_woodbury_inv[:,:,None]
+            woodbury_inv[:, :, d] = post_woodbury_inv
             woodbury_vector[:, d] = posterior.woodbury_vector
             self._log_marginal_likelihood += log_marginal_likelihood
 

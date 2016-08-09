@@ -165,6 +165,7 @@ class Posterior(object):
                 for i in range(B.shape[-1]):
                     tmp, _ = dpotrs(self.K_chol, B[:,:,i])
                     self._woodbury_inv[:,:,i], _ = dpotrs(self.K_chol, tmp.T)
+        #FIXME: Bug where self._woodbury_inv is either 2 or 3 dimensional depending whether woodbury_chiol is provided or covariance!
         return self._woodbury_inv
 
     @property

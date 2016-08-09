@@ -211,8 +211,8 @@ class Laplace(LatentFunctionInference):
             #print "new {} vs old {}".format(obj(Ki_f_new, f_new), obj(Ki_f, f))
             old_obj = obj(Ki_f, f)
             new_obj = obj(Ki_f_new, f_new)
-            if new_obj < old_obj:
-                raise ValueError("Shouldn't happen, brent optimization failing")
+            # if new_obj < old_obj:
+                # raise ValueError("Shouldn't happen, brent optimization failing")
             difference = np.abs(new_obj - old_obj)
             # difference = np.abs(np.sum(f_new - f)) + np.abs(np.sum(Ki_f_new - Ki_f))
             Ki_f = Ki_f_new
@@ -499,4 +499,4 @@ class LaplaceBlock(Laplace):
         Ki_W_i = np.dot(Bi, K)
 
         sign, logdetB = np.linalg.slogdet(B)
-        return K_Wi_i, sign*logdetB, Bi, Ki_W_i
+        return K_Wi_i, sign*logdetB, I_KW_i, Ki_W_i
