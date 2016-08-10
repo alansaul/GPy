@@ -671,6 +671,10 @@ class GP(Model):
         point_densities = point_densities[non_nan_densities]
         param_points = param_points[non_nan_densities, :]
 
+        if Xnew is not None:
+            Xpred_mean = Xpred_mean[non_nan_densities,:,:]
+            Xpred_var= Xpred_var[non_nan_densities,:,:]
+
         point_densities = point_densities - np.max(point_densities)  # Why don't we have to deal with this shift?
         point_densities = np.exp(point_densities)
 
@@ -692,6 +696,10 @@ class GP(Model):
         point_densities = point_densities[non_small_densities]
         param_points = param_points[non_small_densities, :]
         point_densities /= point_densities.sum()
+        
+        if Xnew is not None:
+            Xpred_mean = Xpred_mean[non_small_densities,:,:]
+            Xpred_var= Xpred_var[non_small_densities,:,:]
 
         # for dimension_ind, dimension in enumerate(num_free_params):
             # # Due to the way we built the ccd_points up, every other one changes to the next direction
@@ -775,3 +783,20 @@ class GP(Model):
             H[:,i] = finite_diff
 
         return H
+
+    def pred_CCD(self, Xnew=None):
+        """
+        Make predictions where the uncertainty of the hyperparameters is taken into account.
+
+
+        p(f|y) = \int p(f|y,theta)p(theta) dtheta
+               approx \sum^{S}_{s=1} p(f|y,theta_s)p(theta_s) where theta_s is a sample, or in this case a CCD point, where the density is the weight
+
+        The mean and variance of p(f|y) are then the same as a mixture of normals as given in
+        http://math.stackexchange.com/questions/195911/covariance-of-gaussian-mixtures/195984#195984
+        """
+
+        points, densities, Xpredmean, Xpredvar = self.CCD(Xnew=Xnew)
+        mustar = (Xpredmean*densities[:, None,None]).sum(0)
+        varstar = ((Xpredvar*densities[:,None,None]).sum(0) - (((Xpredmean - mustar)**2)*densities[:,None,None]).sum(0))
+        return mustar, varstar
