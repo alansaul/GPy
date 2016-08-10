@@ -562,6 +562,9 @@ class GP(Model):
     def CCD(self):
         """
         Code is based on implementation within GPStuff, INLA and the original Sanchez and Sanchez paper (2005)
+
+        Instead of simply getting the ML or MAP parameters values, this function will give back a set of parameters from the posterior, with how probable they are.
+        This can be used instead of MCMC for approximate integration over hyper parameters. Predictions can be made with different models (with different parameters), and then combined based on how probable the parameter values were
         """
         modal_params = self.optimizer_array[:].copy()
         num_free_params = modal_params.shape[0]
@@ -712,7 +715,16 @@ class GP(Model):
         # Need to transform the points to the space of parameters again
         f = np.ones(self.size).astype(bool)
         f[self.constraints[paramz.transformations.__fixed__]] = paramz.transformations.FIXED
-        new_t_points = [c.f(transformed_points[:, ind[f[ind]]]) for c, ind in self.constraints.items() if c != paramz.transformations.__fixed__][0]
+        transformed_points_big = np.zeros((transformed_points.shape[0], self.size))
+        transformed_points_big[:, f] = transformed_points[:,:]
+        for c, ind in self.constraints.items():
+            if c != paramz.transformations.__fixed__:
+                transformed_points_big[:, ind] = c.f(transformed_points_big[:, ind])
+        new_t_points = transformed_points_big[:,f]
+
+        # f = np.ones(self.size).astype(bool)
+        # f[self.constraints[paramz.transformations.__fixed__]] = paramz.transformations.FIXED
+        # new_t_points = [c.f(transformed_points[:, ind[f[ind]]]) for c, ind in self.constraints.items() if c != paramz.transformations.__fixed__][0]
 
         return new_t_points, point_densities
 
