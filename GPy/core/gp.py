@@ -559,12 +559,14 @@ class GP(Model):
         mu_star, var_star = self._raw_predict(x_test)
         return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
 
-    def CCD(self):
+    def CCD(self, Xnew=None):
         """
         Code is based on implementation within GPStuff, INLA and the original Sanchez and Sanchez paper (2005)
 
         Instead of simply getting the ML or MAP parameters values, this function will give back a set of parameters from the posterior, with how probable they are.
         This can be used instead of MCMC for approximate integration over hyper parameters. Predictions can be made with different models (with different parameters), and then combined based on how probable the parameter values were
+
+        Xnew is is not none, will make predictions at these points
         """
         modal_params = self.optimizer_array[:].copy()
         num_free_params = modal_params.shape[0]
@@ -613,6 +615,10 @@ class GP(Model):
             bottom_edge[i] = -np.sqrt(num_free_params)
             ccd_points = np.vstack([ccd_points, top_edge, bottom_edge])
 
+        if Xnew is not None:
+            Xpred_mean = np.zeros((ccd_points.shape[0], Xnew.shape[0], self.Y.shape[1]))
+            Xpred_var = np.zeros((ccd_points.shape[0], Xnew.shape[0], self.Y.shape[1])) # Assuming no covariance
+
         # Find the appropriate scaling such that the edges lie on a boundry of equal density
         # First find the density at the mode
         log_marginal = lambda p: -self._objective(p)
@@ -657,6 +663,8 @@ class GP(Model):
         point_densities = np.ones(param_points.shape[0])*np.nan
         for point_ind, param_point in enumerate(param_points):
             point_densities[point_ind] = log_marginal(param_point)
+            if Xnew is not None:
+                Xpred_mean[point_ind,:,:], Xpred_var[point_ind,:,:] = self._raw_predict(Xnew, full_cov=False)
         
         # Remove nan densities
         non_nan_densities = np.isfinite(point_densities).flatten()
@@ -725,6 +733,10 @@ class GP(Model):
         # f = np.ones(self.size).astype(bool)
         # f[self.constraints[paramz.transformations.__fixed__]] = paramz.transformations.FIXED
         # new_t_points = [c.f(transformed_points[:, ind[f[ind]]]) for c, ind in self.constraints.items() if c != paramz.transformations.__fixed__][0]
+
+        self.optimizer_array[:] = modal_params 
+        if Xnew is not None:
+            return new_t_points, point_densities, Xpred_mean, Xpred_var
 
         return new_t_points, point_densities
 
