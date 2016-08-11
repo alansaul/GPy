@@ -195,7 +195,14 @@ class SparseGPMiniBatch(SparseGP):
             self.Z.gradient = self.kern.gradients_X(full_values['dL_dKmm'], self.Z)
             self.Z.gradient += self.kern.gradients_X(full_values['dL_dKnm'].T, self.Z, self.X)
 
-        self.likelihood.update_gradients(full_values['dL_dthetaL'])
+        # Pass on each likelihood gradient if there are many likelihoods
+        if hasattr(self, 'likelihood_list'):
+            for k, v in full_values.items():
+                if k.startswith('dL_dthetaL_'):
+                    dim = int(k.split('_')[-1])
+                    self.likelihood_list[dim].update_gradients(v)
+        else:
+            self.likelihood.update_gradients(full_values['dL_dthetaL'])
 
     def _outer_init_full_values(self):
         """
@@ -254,12 +261,37 @@ class SparseGPMiniBatch(SparseGP):
                 psi2ni = None
                 value_indices = dict(outputs=d, samples=ninan, dL_dKdiag=ninan, dL_dKnm=ninan)
 
+            # Slice relavent metadata out for the dimension in question
+            Y_metadata_d = {}
+            if self.Y_metadata is not None:
+                for key, value in self.Y_metadata.items():
+                    if len(value) > 1 and value.shape[1] > 1:
+                        Y_metadata_d[key] = value[:,d]
+                    else:
+                        Y_metadata_d[key] = value
+
+            # If there is a likelihood list, assume there is one likelihood per output
+            if hasattr(self, 'likelihood_list'):
+                if len(d) > 1:
+                    # Need to be very careful when doing missing data where len(d) > 1, this implies there is one likelihood being applied to a number of output dimensions, but there is more than one likelihood
+                    ValueError('Need a neater way of handline multiple likelihoods for this, for now just make sure every dimension is independent if so')
+                else:
+                    likelihood = self.likelihood_list[d[0]]
+            else:
+                likelihood = self.likelihood
+
             posterior, log_marginal_likelihood, grad_dict = self._inner_parameters_changed(
                                 self.kern, self.X[ninan],
-                                self.Z, self.likelihood,
-                                self.Y_normalized[ninan][:, d], self.Y_metadata,
+                                self.Z, likelihood,
+                                self.Y_normalized[ninan][:, d], Y_metadata_d,
                                 Lm, dL_dKmm,
                                 psi0=psi0ni, psi1=psi1ni, psi2=psi2ni)
+
+            if hasattr(self, 'likelihood_list'):
+                # Name the parameter after the dimension it refers to
+                for di in d:
+                    grad_dict['dL_dthetaL_{}'.format(di)] = grad_dict['dL_dthetaL']
+                    del grad_dict['dL_dthetaL']
 
             # Fill out the full values by adding in the apporpriate grad_dict
             # values
@@ -293,6 +325,7 @@ class SparseGPMiniBatch(SparseGP):
             woodbury_vector = self.posterior._woodbury_vector
 
         d = self.stochastics.d[0][0]
+        # TODO: Need to handle likelihood list, would be better to do a mixed_noise model
         posterior, log_marginal_likelihood, grad_dict= self._inner_parameters_changed(
                             self.kern, self.X,
                             self.Z, self.likelihood,
