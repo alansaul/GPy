@@ -227,10 +227,9 @@ class Fixed(Static):
     def update_gradients_expectations(self, dL_dpsi0, dL_dpsi1, dL_dpsi2, Z, variational_posterior):
         self.variance.gradient = dL_dpsi0.sum()
 
-<<<<<<< HEAD
     def update_gradients_expectations_psicov(self, dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior):
         self.update_gradients_expectations(dL_dpsi0, dL_dpsi1, dL_dpsicov, Z, variational_posterior)
-=======
+
 class Precomputed(Fixed):
     def __init__(self, input_dim, covariance_matrix, variance=1., active_dims=None, name='precomputed'):
         """
@@ -285,5 +284,4 @@ class Precomputed(Fixed):
 
     def update_gradients_diag(self, dL_dKdiag, X):
         self.variance.gradient = np.einsum('i,ii', dL_dKdiag, self._index(X, None))
->>>>>>> upstream/devel
 
