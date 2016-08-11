@@ -27,7 +27,7 @@ class MiscTests(unittest.TestCase):
         Test whether the predicted variance of normal GP goes negative under numerical unstable situation.
         Thanks simbartonels@github for reporting the bug and providing the following example.
         """
-        
+
         # set seed for reproducability
         np.random.seed(3)
         # Definition of the Branin test function
@@ -69,13 +69,13 @@ class MiscTests(unittest.TestCase):
         K_hat = k.K(self.X_new) - k.K(self.X_new, self.X).dot(Kinv).dot(k.K(self.X, self.X_new))
         mu_hat = k.K(self.X_new, self.X).dot(Kinv).dot(m.Y_normalized)
 
-        mu, covar = m._raw_predict(self.X_new, full_cov=True)
+        mu, covar = m.predict_noiseless(self.X_new, full_cov=True)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(covar.shape, (self.N_new, self.N_new))
         np.testing.assert_almost_equal(K_hat, covar)
         np.testing.assert_almost_equal(mu_hat, mu)
 
-        mu, var = m._raw_predict(self.X_new)
+        mu, var = m.predict_noiseless(self.X_new)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(var.shape, (self.N_new, 1))
         np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
@@ -166,7 +166,7 @@ class MiscTests(unittest.TestCase):
         # S = \int (f(x) - m)^2q(x|mu,S) dx = \int f(x)^2 q(x) dx - mu**2 = 4(mu^2 + S) - (2.mu)^2 = 4S
         Y_mu_true = 2*X_pred_mu
         Y_var_true = 4*X_pred_var
-        Y_mu_pred, Y_var_pred = m._raw_predict(X_pred)
+        Y_mu_pred, Y_var_pred = m.predict_noiseless(X_pred)
         np.testing.assert_allclose(Y_mu_true, Y_mu_pred, rtol=1e-4)
         np.testing.assert_allclose(Y_var_true, Y_var_pred, rtol=1e-4)
 
@@ -181,13 +181,13 @@ class MiscTests(unittest.TestCase):
         K_hat = k.K(self.X_new) - k.K(self.X_new, Z).dot(Kinv).dot(k.K(Z, self.X_new))
         K_hat = np.clip(K_hat, 1e-15, np.inf)
 
-        mu, covar = m._raw_predict(self.X_new, full_cov=True)
+        mu, covar = m.predict_noiseless(self.X_new, full_cov=True)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(covar.shape, (self.N_new, self.N_new))
         np.testing.assert_almost_equal(K_hat, covar)
         # np.testing.assert_almost_equal(mu_hat, mu)
 
-        mu, var = m._raw_predict(self.X_new)
+        mu, var = m.predict_noiseless(self.X_new)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(var.shape, (self.N_new, 1))
         np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
@@ -405,6 +405,26 @@ class MiscTests(unittest.TestCase):
         warp_m.plot()
         warp_f.plot(X.min()-10, X.max()+10)
         plt.show()
+        
+    def test_offset_regression(self):
+        #Tests GPy.models.GPOffsetRegression. Using two small time series
+        #from a sine wave, we confirm the algorithm determines that the
+        #likelihood is maximised when the offset hyperparameter is approximately
+        #equal to the actual offset in X between the two time series.
+        offset = 3
+        X1 = np.arange(0,50,5.0)[:,None]
+        X2 = np.arange(0+offset,50+offset,5.0)[:,None]
+        X = np.vstack([X1,X2])
+        ind = np.vstack([np.zeros([10,1]),np.ones([10,1])])
+        X = np.hstack([X,ind])
+        Y = np.sin((X[0:10,0])/30.0)[:,None]
+        Y = np.vstack([Y,Y])
+
+        m = GPy.models.GPOffsetRegression(X,Y)
+        m.rbf.lengthscale=5.0 #make it something other than one to check our gradients properly!
+        assert m.checkgrad(), "Gradients of offset parameters don't match numerical approximations."
+        m.optimize()
+        assert np.abs(m.offset[0]-offset)<0.1, ("GPOffsetRegression model failing to estimate correct offset (value estimated = %0.2f instead of %0.2f)" % (m.offset[0], offset))
 
 
 
@@ -750,6 +770,7 @@ class GradientTests(np.testing.TestCase):
         self.assertTrue( np.allclose(var1, var2) )
 
     def test_gp_VGPC(self):
+        np.random.seed(10)
         num_obs = 25
         X = np.random.randint(0, 140, num_obs)
         X = X[:, None]
@@ -757,19 +778,22 @@ class GradientTests(np.testing.TestCase):
         kern = GPy.kern.Bias(1) + GPy.kern.RBF(1)
         lik = GPy.likelihoods.Gaussian()
         m = GPy.models.GPVariationalGaussianApproximation(X, Y, kernel=kern, likelihood=lik)
+        m.randomize()
         self.assertTrue(m.checkgrad())
-        
+
     def test_ssgplvm(self):
         from GPy import kern
         from GPy.models import SSGPLVM
         from GPy.examples.dimensionality_reduction import _simulate_matern
-    
+
+        np.random.seed(10)
         D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
         _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, False)
         Y = Ylist[0]
         k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
         # k = kern.RBF(Q, ARD=True, lengthscale=10.)
         m = SSGPLVM(Y, Q, init="rand", num_inducing=num_inducing, kernel=k, group_spike=True)
+        m.randomize()
         self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":
