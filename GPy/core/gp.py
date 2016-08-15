@@ -220,7 +220,7 @@ class GP(Model):
             mu += self.mean_function.f(Xnew)
         return mu, var
 
-    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, likelihood=None, include_likelihood=True):
+    def predict(self, Xnew, full_cov=False, Y_metadata=None, kern=None, likelihood=None, include_likelihood=True, CCD=False, **kwargs):
         """
         Predict the function(s) at the new point(s) Xnew. This includes the likelihood
         variance added to the predicted underlying function (usually referred to as f).
@@ -248,7 +248,11 @@ class GP(Model):
         Note: If you want the predictive quantiles (e.g. 95% confidence interval) use :py:func:"~GPy.core.gp.GP.predict_quantiles".
         """
         #predict the latent function values
-        mu, var = self._raw_predict(Xnew, full_cov=full_cov, kern=kern)
+        if CCD:
+            mu, var = self.pred_CCD(Xnew, full_cov=full_cov, kern=kern, **kwargs)
+        else:
+            mu, var = self._raw_predict(Xnew, full_cov=full_cov, kern=kern)
+
         if self.normalizer is not None:
             mu, var = self.normalizer.inverse_mean(mu), self.normalizer.inverse_variance(var)
 
@@ -287,7 +291,7 @@ class GP(Model):
         """
         return self.predict(Xnew, full_cov, Y_metadata, kern, None, False)
 
-    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None):
+    def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None, CCD=False, **kwargs):
         """
         Get the predictive quantiles around the prediction at X
 
@@ -300,7 +304,10 @@ class GP(Model):
         :returns: list of quantiles for each X and predictive quantiles for interval combination
         :rtype: [np.ndarray (Xnew x self.output_dim), np.ndarray (Xnew x self.output_dim)]
         """
-        m, v = self._raw_predict(X,  full_cov=False, kern=kern)
+        if CCD:
+            m, v = self.pred_CCD(X,  full_cov=False, kern=kern, **kwargs)
+        else:
+            m, v = self._raw_predict(X,  full_cov=False, kern=kern)
         if self.normalizer is not None:
             m, v = self.normalizer.inverse_mean(m), self.normalizer.inverse_variance(v)
         if likelihood is None:
@@ -638,7 +645,7 @@ class GP(Model):
         
         return log_pred_dens
 
-    def CCD(self, Xnew=None, step_length=1e-3):
+    def CCD(self, Xnew=None, step_length=1e-3, full_cov=False, **kwargs):
         """
         Code is based on implementation within GPStuff, INLA and the original Sanchez and Sanchez paper (2005)
 
@@ -647,6 +654,9 @@ class GP(Model):
 
         Xnew is is not none, will make predictions at these points
         """
+        if full_cov:
+            raise ValueError("CCD with full_cov not implemented")
+
         modal_params = self.optimizer_array[:].copy()
         num_free_params = modal_params.shape[0]
 
@@ -743,7 +753,7 @@ class GP(Model):
         for point_ind, param_point in enumerate(param_points):
             point_densities[point_ind] = log_marginal(param_point)
             if Xnew is not None:
-                Xpred_mean[point_ind,:,:], Xpred_var[point_ind,:,:] = self._raw_predict(Xnew, full_cov=False)
+                Xpred_mean[point_ind,:,:], Xpred_var[point_ind,:,:] = self._raw_predict(Xnew, full_cov=False, **kwargs)
         
         # Remove nan densities
         non_nan_densities = np.isfinite(point_densities).flatten()
@@ -863,7 +873,7 @@ class GP(Model):
 
         return H
 
-    def pred_CCD(self, Xnew=None, step_length=1e-3):
+    def pred_CCD(self, Xnew=None, step_length=1e-3, full_cov=False, **kwargs):
         """
         Make predictions where the uncertainty of the hyperparameters is taken into account.
 
@@ -874,8 +884,11 @@ class GP(Model):
         The mean and variance of p(f|y) are then the same as a mixture of normals as given in
         http://math.stackexchange.com/questions/195911/covariance-of-gaussian-mixtures/195984#195984
         """
+        if full_cov:
+            raise ValueError("CCD with full_cov not implemented")
 
-        points, densities, Xpredmean, Xpredvar = self.CCD(Xnew=Xnew, step_length=step_length)
+        points, densities, Xpredmean, Xpredvar = self.CCD(Xnew=Xnew, step_length=step_length, **kwargs)
         mustar = (Xpredmean*densities[:, None,None]).sum(0)
         varstar = ((Xpredvar*densities[:,None,None]).sum(0) - (((Xpredmean - mustar)**2)*densities[:,None,None]).sum(0))
         return mustar, varstar
+
