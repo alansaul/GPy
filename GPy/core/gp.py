@@ -603,7 +603,42 @@ class GP(Model):
         mu_star, var_star = self._raw_predict(x_test)
         return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
 
-    def CCD(self, Xnew=None):
+    def log_predictive_density_sampling_missing(self, x_test, y_test, y_missing, Y_metadata=None, num_samples=1000):
+        """
+        Evaluate log predictive density, but only for missing values, y_missing, which is a matrix of trues and falses (or 0's and 1's) indicating missing. The values that are not evaluated will be np.nan
+        """
+
+        # Make predictions for all inputs
+        mu_star, var_star = self._raw_predict(x_test)
+        
+        # Nan for values that we are not predicting for (the non-missing values as we don't want to evaluate on the training data itself)
+        log_pred_dens = np.zeros_like(y_test)*np.nan
+        # Do each dimension seperately as they could have different numbers of missing observations and 
+        for dim in range(y_test.shape[1]):
+            # If there is a likelihood associated with this output, use it
+            if hasattr(self, 'likelihood_list'):
+                likelihood_j = self.likelihood_list[dim]
+            else:
+                likelihood_j = self.likelihood
+
+            y_missing_j = y_missing[:,dim]
+            mu_star_j, var_star_j = mu_star[y_missing_j, dim:dim+1], var_star[y_missing_j, dim:dim+1]
+            y_test_j = y_test[y_missing_j, dim:dim+1]
+
+            Y_metadata_j = {}
+            if Y_metadata is not None:
+                for key, value in Y_metadata.items():
+                    if len(value) > 1 and value.shape[1] > 1:
+                        Y_metadata_j[key] = value[y_missing_j,dim:dim+1]
+                    else:
+                        Y_metadata_j[key] = value
+
+            log_pred_dens_j = likelihood_j.log_predictive_density_sampling(y_test_j, mu_star_j, var_star_j, Y_metadata=Y_metadata_j, num_samples=num_samples)
+            log_pred_dens[y_missing_j,dim:dim+1] = log_pred_dens_j
+        
+        return log_pred_dens
+
+    def CCD(self, Xnew=None, step_length=1e-3):
         """
         Code is based on implementation within GPStuff, INLA and the original Sanchez and Sanchez paper (2005)
 
@@ -616,7 +651,7 @@ class GP(Model):
         num_free_params = modal_params.shape[0]
 
         # Calculate the numerical hessian for *every* parameter
-        H = self.numerical_parameter_hessian()
+        H = self.numerical_parameter_hessian(step_length=step_length)
 
         try:
             curv = pdinv(H)[0]
@@ -786,7 +821,7 @@ class GP(Model):
         # f[self.constraints[paramz.transformations.__fixed__]] = paramz.transformations.FIXED
         # new_t_points = [c.f(transformed_points[:, ind[f[ind]]]) for c, ind in self.constraints.items() if c != paramz.transformations.__fixed__][0]
 
-        self.optimizer_array[:] = modal_params 
+        self.optimizer_array = modal_params 
         if Xnew is not None:
             return new_t_points, point_densities, Xpred_mean, Xpred_var
 
@@ -828,7 +863,7 @@ class GP(Model):
 
         return H
 
-    def pred_CCD(self, Xnew=None):
+    def pred_CCD(self, Xnew=None, step_length=1e-3):
         """
         Make predictions where the uncertainty of the hyperparameters is taken into account.
 
@@ -840,7 +875,7 @@ class GP(Model):
         http://math.stackexchange.com/questions/195911/covariance-of-gaussian-mixtures/195984#195984
         """
 
-        points, densities, Xpredmean, Xpredvar = self.CCD(Xnew=Xnew)
+        points, densities, Xpredmean, Xpredvar = self.CCD(Xnew=Xnew, step_length=step_length)
         mustar = (Xpredmean*densities[:, None,None]).sum(0)
         varstar = ((Xpredvar*densities[:,None,None]).sum(0) - (((Xpredmean - mustar)**2)*densities[:,None,None]).sum(0))
         return mustar, varstar

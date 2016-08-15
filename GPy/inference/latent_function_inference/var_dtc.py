@@ -63,7 +63,7 @@ class VarDTC(LatentFunctionInference):
     def get_VVTfactor(self, Y, prec):
         return Y * prec # TODO chache this, and make it effective
 
-    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, mean_function=None, precision=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None, Z_tilde=None):
+    def inference(self, kern, X, Z, likelihood, Y, Y_metadata=None, mean_function=None, precision=None, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None, Z_tilde=None, **kwargs):
         assert mean_function is None, "inference with a mean function not implemented"
 
         num_data, output_dim = Y.shape

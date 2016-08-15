@@ -256,9 +256,11 @@ class SparseGPMiniBatch(SparseGP):
             psi1ni = self.psi1[ninan]
             if self.has_uncertain_inputs():
                 psi2ni = self.psi2[ninan]
+                psicovni = self.psicov[ninan]
                 value_indices = dict(outputs=d, samples=ninan, dL_dpsi0=ninan, dL_dpsi1=ninan, dL_dpsi2=ninan)
             else:
                 psi2ni = None
+                psicovni = None
                 value_indices = dict(outputs=d, samples=ninan, dL_dKdiag=ninan, dL_dKnm=ninan)
 
             # Slice relavent metadata out for the dimension in question
@@ -266,7 +268,7 @@ class SparseGPMiniBatch(SparseGP):
             if self.Y_metadata is not None:
                 for key, value in self.Y_metadata.items():
                     if len(value) > 1 and value.shape[1] > 1:
-                        Y_metadata_d[key] = value[:,d]
+                        Y_metadata_d[key] = value[ninan,d].reshape(int(ninan.sum()),len(d))
                     else:
                         Y_metadata_d[key] = value
 
@@ -285,7 +287,7 @@ class SparseGPMiniBatch(SparseGP):
                                 self.Z, likelihood,
                                 self.Y_normalized[ninan][:, d], Y_metadata_d,
                                 Lm, dL_dKmm,
-                                psi0=psi0ni, psi1=psi1ni, psi2=psi2ni)
+                                psi0=psi0ni, psi1=psi1ni, psi2=psi2ni, psicov=psicovni)
 
             if hasattr(self, 'likelihood_list'):
                 # Name the parameter after the dimension it refers to
@@ -351,10 +353,12 @@ class SparseGPMiniBatch(SparseGP):
             self.psi0 = self.kern.psi0(self.Z, self.X)
             self.psi1 = self.kern.psi1(self.Z, self.X)
             self.psi2 = self.kern.psi2n(self.Z, self.X)
+            self.psicov = self.kern.psicovn(self.Z, self.X)
         else:
             self.psi0 = self.kern.Kdiag(self.X)
             self.psi1 = self.kern.K(self.X, self.Z)
             self.psi2 = None
+            self.psicov = None
 
         if self.missing_data:
             self._outer_loop_for_missing_data()
