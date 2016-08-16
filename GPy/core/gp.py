@@ -653,6 +653,8 @@ class GP(Model):
         This can be used instead of MCMC for approximate integration over hyper parameters. Predictions can be made with different models (with different parameters), and then combined based on how probable the parameter values were
 
         Xnew is is not none, will make predictions at these points
+
+        TODO: would be nice to cache this!
         """
         if full_cov:
             raise ValueError("CCD with full_cov not implemented")
@@ -666,8 +668,8 @@ class GP(Model):
         try:
             curv = pdinv(H)[0]
         except np.linalg.linalg.LinAlgError:
-            print("Hessian is not positive definite, ensure parameters are at their MAP solution by optimizing, if that doesn't work try modifying the step length parameter")
-            return
+            raise ValueError("Hessian is not positive definite, ensure parameters are at their MAP solution by optimizing, if that doesn't work try modifying the step length parameter")
+
         # CCD points are calculated for unit circle, so we take the principle components and scale them such that we have a unit sphere in our parameter space, which we can then map back to parameter space
         [w, V] = np.linalg.eig(curv)
         z = (V*np.sqrt(w[None,:])).T
