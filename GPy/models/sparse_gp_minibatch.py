@@ -197,10 +197,13 @@ class SparseGPMiniBatch(SparseGP):
 
         # Pass on each likelihood gradient if there are many likelihoods
         if hasattr(self, 'likelihood_list'):
-            for k, v in full_values.items():
-                if k.startswith('dL_dthetaL_'):
-                    dim = int(k.split('_')[-1])
-                    self.likelihood_list[dim].update_gradients(v)
+            for dims in self.likelihood_list.keys():
+                # Zero out the existing values
+                grads = (self.likelihood_list[dims].gradient)*0.0
+                for dim in dims:
+                    grads += full_values['dL_dthetaL_{}'.format(dim)]
+                self.likelihood_list[dims].update_gradients(grads)
+
         else:
             self.likelihood.update_gradients(full_values['dL_dthetaL'])
 
@@ -278,7 +281,9 @@ class SparseGPMiniBatch(SparseGP):
                     # Need to be very careful when doing missing data where len(d) > 1, this implies there is one likelihood being applied to a number of output dimensions, but there is more than one likelihood
                     ValueError('Need a neater way of handline multiple likelihoods for this, for now just make sure every dimension is independent if so')
                 else:
-                    likelihood = self.likelihood_list[d[0]]
+                    for dims in self.likelihood_list.keys():
+                        if d[0] in dims:
+                            likelihood = self.likelihood_list[dims]
             else:
                 likelihood = self.likelihood
 
