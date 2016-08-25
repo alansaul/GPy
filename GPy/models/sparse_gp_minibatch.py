@@ -266,11 +266,13 @@ class SparseGPMiniBatch(SparseGP):
                 psicovni = None
                 value_indices = dict(outputs=d, samples=ninan, dL_dKdiag=ninan, dL_dKnm=ninan)
 
+            # Lots of slicing out relavent bits....
+
             # Slice relavent metadata out for the dimension in question
             Y_metadata_d = {}
             if self.Y_metadata is not None:
                 for key, value in self.Y_metadata.items():
-                    if len(value) > 1 and value.shape[1] > 1:
+                    if isinstance(value, np.ndarray) and len(value) > 1 and value.shape[1] > 1:
                         Y_metadata_d[key] = value[ninan,d].reshape(int(ninan.sum()),len(d))
                     else:
                         Y_metadata_d[key] = value
@@ -287,6 +289,22 @@ class SparseGPMiniBatch(SparseGP):
             else:
                 likelihood = self.likelihood
 
+            # If there is a beta dict get the associated beta for this output
+            if hasattr(self, 'beta_dict'):
+                if len(d) > 1:
+                    # Need to be very careful when doing missing data where len(d) > 1, this implies there is one likelihood being applied to a number of output dimensions, but there is more than one likelihood
+                    ValueError('Need a neater way of handline multiple likelihoods for this, for now just make sure every dimension is independent if so')
+                else:
+                    for dims in self.beta_dict.keys():
+                        if d[0] in dims:
+                            betaj = self.beta_dict[dims]
+                    Y_metadata_d['beta_aux'] = betaj
+            elif hasattr(self, 'beta'):
+                betaj = self.beta_aux
+                Y_metadata_d['beta_aux'] = betaj
+
+            # Ew, passng through Y_metadata is ugly, change this to an extra argument to inner_parameters_changed! and inference respectively!
+
             posterior, log_marginal_likelihood, grad_dict = self._inner_parameters_changed(
                                 self.kern, self.X[ninan],
                                 self.Z, likelihood,
@@ -299,6 +317,13 @@ class SparseGPMiniBatch(SparseGP):
                 for di in d:
                     grad_dict['dL_dthetaL_{}'.format(di)] = grad_dict['dL_dthetaL']
                     del grad_dict['dL_dthetaL']
+
+            if hasattr(self, 'beta_dict'):
+                # Name the parameter after the dimension it refers to
+                for di in d:
+                    grad_dict['dL_dbeta_aux_{}'.format(di)] = grad_dict['dL_dbeta_aux']
+                    del grad_dict['dL_dbeta_aux']
+
 
             # Fill out the full values by adding in the apporpriate grad_dict
             # values
