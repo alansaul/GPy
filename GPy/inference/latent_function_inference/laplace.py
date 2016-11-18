@@ -191,7 +191,7 @@ class Laplace(LatentFunctionInference):
             W_f = W*f
 
             b = W_f + grad # R+W p46 line 6.
-            W12BiW12, _, _, _ = self._compute_B_statistics(K, W, likelihood.log_concave, *args, **kwargs)
+            W12BiW12 = self._compute_B_statistics(K, W, likelihood.log_concave, K_Wi_i_only=True, *args, **kwargs)
             W12BiW12Kb = np.dot(W12BiW12, np.dot(K, b))
 
             #Work out the DIRECTION that we want to move in, but don't choose the stepsize yet
@@ -305,7 +305,7 @@ class Laplace(LatentFunctionInference):
         self.f_hat = f_hat
         return log_marginal, K_Wi_i, dL_dK, dL_dthetaL
 
-    def _compute_B_statistics(self, K, W, log_concave, *args, **kwargs):
+    def _compute_B_statistics(self, K, W, log_concave, K_Wi_i_only=False, *args, **kwargs):
         """
         Rasmussen suggests the use of a numerically stable positive definite matrix B
         Which has a positive diagonal elements and can be easily inverted
@@ -336,6 +336,9 @@ class Laplace(LatentFunctionInference):
 
         LiW12, _ = dtrtrs(L, np.diagflat(W_12), lower=1, trans=0)
         K_Wi_i = np.dot(LiW12.T, LiW12) # R = W12BiW12, in R&W p 126, eq 5.25
+
+        if K_Wi_i_only:
+            return K_Wi_i
 
         #here's a better way to compute the required matrix.
         # you could do the model finding witha backsub, instead of a dot...
@@ -471,7 +474,7 @@ class LaplaceBlock(Laplace):
         #self.implicit_part = implicit_part
         return log_marginal, K_Wi_i, dL_dK, dL_dthetaL
 
-    def _compute_B_statistics(self, K, W, log_concave, *args, **kwargs):
+    def _compute_B_statistics(self, K, W, log_concave, K_Wi_i_only=False, *args, **kwargs):
         """
         Rasmussen suggests the use of a numerically stable positive definite matrix B
         Which has a positive diagonal element and can be easyily inverted
@@ -493,6 +496,8 @@ class LaplaceBlock(Laplace):
         #K_Wi_i = np.eye(K.shape[0]) - mdot(W, Bi, K)
         K_Wi_i = np.dot(W, Bi)
 
+        if K_Wi_i_only:
+            return K_Wi_i
         #self.K_Wi_i_brute = np.linalg.inv(K + np.linalg.inv(W))
         #self.B = B
         #self.Bi = Bi

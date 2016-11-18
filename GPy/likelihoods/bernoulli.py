@@ -20,11 +20,11 @@ class Bernoulli(Likelihood):
     .. See also::
         likelihood.py, for the parent class
     """
-    def __init__(self, gp_link=None):
+    def __init__(self, gp_link=None, name='Bernoulli'):
         if gp_link is None:
             gp_link = link_functions.Probit()
 
-        super(Bernoulli, self).__init__(gp_link, 'Bernoulli')
+        super(Bernoulli, self).__init__(gp_link, name=name)
 
         if isinstance(gp_link , (link_functions.Heaviside, link_functions.Probit)):
             self.log_concave = True

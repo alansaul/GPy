@@ -592,7 +592,7 @@ class GP(Model):
         mu_star, var_star = self._raw_predict(x_test)
         return self.likelihood.log_predictive_density(y_test, mu_star, var_star, Y_metadata=Y_metadata)
 
-    def log_predictive_density_sampling(self, x_test, y_test, Y_metadata=None, num_samples=1000):
+    def log_predictive_density_sampling(self, x_test, y_test, Y_metadata=None, num_samples=1000, CCD=False, **kwargs):
         """
         Calculation of the log predictive density by sampling
 
@@ -607,7 +607,10 @@ class GP(Model):
         :param num_samples: number of samples to use in monte carlo integration
         :type num_samples: int
         """
-        mu_star, var_star = self._raw_predict(x_test)
+        if CCD:
+            mu_star, var_star = self.pred_CCD(x_test, **kwargs)
+        else:
+            mu_star, var_star = self._raw_predict(x_test)
         return self.likelihood.log_predictive_density_sampling(y_test, mu_star, var_star, Y_metadata=Y_metadata, num_samples=num_samples)
 
     def log_predictive_density_sampling_missing(self, x_test, y_test, y_missing, Y_metadata=None, num_samples=1000):
@@ -891,6 +894,6 @@ class GP(Model):
 
         points, densities, Xpredmean, Xpredvar = self.CCD(Xnew=Xnew, step_length=step_length, **kwargs)
         mustar = (Xpredmean*densities[:, None,None]).sum(0)
-        varstar = ((Xpredvar*densities[:,None,None]).sum(0) - (((Xpredmean - mustar)**2)*densities[:,None,None]).sum(0))
+        varstar = ((Xpredvar*densities[:,None,None]).sum(0) + (((Xpredmean - mustar)**2)*densities[:,None,None]).sum(0))
         return mustar, varstar
 
