@@ -856,7 +856,7 @@ class GP(Model):
         # log_marginal(modal_params)
         self.param_array[f] = new_t_points[0]
         if Xnew is not None:
-            if samples is not None:
+            if samples:
                 return new_t_points, point_densities, Xpred_mean, Xpred_var, f_samples
             return new_t_points, point_densities, Xpred_mean, Xpred_var
 
