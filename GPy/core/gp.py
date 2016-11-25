@@ -648,7 +648,7 @@ class GP(Model):
         
         return log_pred_dens
 
-    def CCD(self, Xnew=None, step_length=1e-3, full_cov=False, **kwargs):
+    def CCD(self, Xnew=None, step_length=1e-3, full_cov=False, samples=False, **kwargs):
         """
         Code is based on implementation within GPStuff, INLA and the original Sanchez and Sanchez paper (2005)
 
@@ -756,8 +756,10 @@ class GP(Model):
         # Evaluate log marginal at all parameter points
         point_densities = np.ones(param_points.shape[0])*np.nan
         for point_ind, param_point in enumerate(param_points):
+            # This will also set the current parameters to the correct ones
             point_densities[point_ind] = log_marginal(param_point)
             if Xnew is not None:
+                # Parameters have been hanged, so make a prediction
                 Xpred_mean[point_ind,:,:], Xpred_var[point_ind,:,:] = self._raw_predict(Xnew, full_cov=False, **kwargs)
         
         # Remove nan densities
@@ -835,9 +837,27 @@ class GP(Model):
         # f = np.ones(self.size).astype(bool)
         # f[self.constraints[paramz.transformations.__fixed__]] = paramz.transformations.FIXED
         # new_t_points = [c.f(transformed_points[:, ind[f[ind]]]) for c, ind in self.constraints.items() if c != paramz.transformations.__fixed__][0]
-
-        self.optimizer_array = modal_params 
+        
+        # For a check, go through and set all the new_t_points and make new predictions
         if Xnew is not None:
+            if samples:
+                num_samples_per_model = int(np.floor(samples / new_t_points.shape[0]))
+                samples = num_samples_per_model * new_t_points.shape[0]
+                f_samples = np.zeros((samples, Xnew.shape[0], self.Y.shape[1]))
+
+            for point_ind, param_point in enumerate(new_t_points):
+                # These points are already in transformed space, so need to set them directly like self[:] but for only the non fixed points
+                self.param_array[f] = param_point
+                Xpred_mean[point_ind,:,:], Xpred_var[point_ind,:,:] = self._raw_predict(Xnew, full_cov=False, **kwargs)
+                if samples:
+                    f_samples[point_ind:point_ind+num_samples_per_model,:,:] = self.posterior_samples_f(Xnew, full_cov=True, size=num_samples_per_model)
+
+        # self.optimizer_array = modal_params 
+        # log_marginal(modal_params)
+        self.param_array[f] = new_t_points[0]
+        if Xnew is not None:
+            if samples is not None:
+                return new_t_points, point_densities, Xpred_mean, Xpred_var, f_samples
             return new_t_points, point_densities, Xpred_mean, Xpred_var
 
         return new_t_points, point_densities
@@ -878,7 +898,7 @@ class GP(Model):
 
         return H
 
-    def pred_CCD(self, Xnew=None, step_length=1e-3, full_cov=False, **kwargs):
+    def pred_CCD(self, Xnew=None, step_length=1e-3, full_cov=False, samples=False, **kwargs):
         """
         Make predictions where the uncertainty of the hyperparameters is taken into account.
 
@@ -892,8 +912,16 @@ class GP(Model):
         if full_cov:
             raise ValueError("CCD with full_cov not implemented")
 
-        points, densities, Xpredmean, Xpredvar = self.CCD(Xnew=Xnew, step_length=step_length, **kwargs)
+        if samples:
+            points, densities, Xpredmean, Xpredvar, f_samples = self.CCD(Xnew=Xnew, step_length=step_length, samples=samples, **kwargs)
+        else:
+            points, densities, Xpredmean, Xpredvar = self.CCD(Xnew=Xnew, step_length=step_length, **kwargs)
         mustar = (Xpredmean*densities[:, None,None]).sum(0)
-        varstar = ((Xpredvar*densities[:,None,None]).sum(0) + (((Xpredmean - mustar)**2)*densities[:,None,None]).sum(0))
-        return mustar, varstar
+        # varstar = ((Xpredvar*densities[:,None,None]).sum(0) + (((Xpredmean - mustar)**2)*densities[:,None,None]).sum(0))
+        varstar = (densities[:,None,None] * ((Xpredmean - mustar)**2 + Xpredvar)).sum(0)
+        raw_mu, var_var = self._raw_predict(Xnew)
+        if samples:
+            return mustar, varstar, f_samples
+        else:
+            return mustar, varstar
 
