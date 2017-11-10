@@ -51,6 +51,10 @@ class Stationary(Kern):
 
     The lengthscale(s) and variance parameters are added to the structure automatically.
 
+    Thanks to @strongh:
+    In Stationary, a covariance function is defined in GPy as stationary when it depends only on the l2-norm |x_1 - x_2 |.
+    However this is the typical definition of isotropy, while stationarity is usually a bit more relaxed.
+    The more common version of stationarity is that the covariance is a function of x_1 - x_2 (See e.g. R&W first paragraph of section 4.1).
     """
 
     def __init__(self, input_dim, variance, lengthscale, ARD, active_dims, name, useGPU=False):
@@ -75,6 +79,13 @@ class Stationary(Kern):
         assert self.variance.size==1
         self.link_parameters(self.variance, self.lengthscale)
 
+    def _to_dict(self):
+        input_dict = super(Stationary, self)._to_dict()
+        input_dict["variance"] =  self.variance.values.tolist()
+        input_dict["lengthscale"] = self.lengthscale.values.tolist()
+        input_dict["ARD"] = self.ARD
+        return input_dict
+
     def K_of_r(self, r):
         raise NotImplementedError("implement the covariance function as a fn of r to use this class")
 
@@ -84,6 +95,11 @@ class Stationary(Kern):
     @Cache_this(limit=3, ignore_args=())
     def dK2_drdr(self, r):
         raise NotImplementedError("implement second derivative of covariance wrt r to use this method")
+
+    @Cache_this(limit=3, ignore_args=())
+    def dK2_drdr_diag(self):
+        "Second order derivative of K in r_{i,i}. The diagonal entries are always zero, so we do not give it here."
+        raise NotImplementedError("implement second derivative of covariance wrt r_diag to use this method")
 
     @Cache_this(limit=3, ignore_args=())
     def K(self, X, X2=None):
@@ -126,7 +142,7 @@ class Stationary(Kern):
             #X2, = self._slice_X(X2)
             X1sq = np.sum(np.square(X),1)
             X2sq = np.sum(np.square(X2),1)
-            r2 = -2.*np.dot(X, X2.T) + X1sq[:,None] + X2sq[None,:]
+            r2 = -2.*np.dot(X, X2.T) + (X1sq[:,None] + X2sq[None,:])
             r2 = np.clip(r2, 0, np.inf)
             return np.sqrt(r2)
 
@@ -189,6 +205,16 @@ class Stationary(Kern):
             self.lengthscale.gradient = -np.sum(dL_dr*r)/self.lengthscale
 
 
+    def update_gradients_direct(self, dL_dVar, dL_dLen):
+        """
+        Specially intended for the Grid regression case.
+        Given the computed log likelihood derivates, update the corresponding
+        kernel and likelihood gradients.
+        Useful for when gradients have been computed a priori.
+        """
+        self.variance.gradient = dL_dVar
+        self.lengthscale.gradient = dL_dLen
+
     def _inv_dist(self, X, X2=None):
         """
         Compute the elementwise inverse of the distance matrix, expecpt on the
@@ -222,54 +248,57 @@ class Stationary(Kern):
         """
         Given the derivative of the objective K(dL_dK), compute the second derivative of K wrt X and X2:
 
+        returns the full covariance matrix [QxQ] of the input dimensionfor each pair or vectors, thus
+        the returned array is of shape [NxNxQxQ].
+
         ..math:
-          \frac{\partial^2 K}{\partial X\partial X2}
+            \frac{\partial^2 K}{\partial X2 ^2} = - \frac{\partial^2 K}{\partial X\partial X2}
 
         ..returns:
-            dL2_dXdX2: NxMxQ, for X [NxQ] and X2[MxQ] (X2 is X if, X2 is None)
-            Thus, we return the second derivative in X2.
+            dL2_dXdX2:  [NxMxQxQ] in the cov=True case, or [NxMxQ] in the cov=False case,
+                        for X [NxQ] and X2[MxQ] (X2 is X if, X2 is None)
+                        Thus, we return the second derivative in X2.
         """
-        # The off diagonals in Q are always zero, this should also be true for the Linear kernel...
         # According to multivariable chain rule, we can chain the second derivative through r:
         # d2K_dXdX2 = dK_dr*d2r_dXdX2 + d2K_drdr * dr_dX * dr_dX2:
         invdist = self._inv_dist(X, X2)
         invdist2 = invdist**2
-
-        dL_dr = self.dK_dr_via_X(X, X2) * dL_dK
+        dL_dr = self.dK_dr_via_X(X, X2) #* dL_dK # we perform this product later
         tmp1 = dL_dr * invdist
-
-        dL_drdr = self.dK2_drdr_via_X(X, X2) * dL_dK
-        tmp2 = dL_drdr * invdist2
-
-        l2 = np.ones(X.shape[1]) * self.lengthscale**2
+        dL_drdr = self.dK2_drdr_via_X(X, X2) #* dL_dK # we perofrm this product later
+        tmp2 = dL_drdr*invdist2
+        l2 =  np.ones(X.shape[1])*self.lengthscale**2 #np.multiply(np.ones(X.shape[1]) ,self.lengthscale**2)
 
         if X2 is None:
             X2 = X
             tmp1 -= np.eye(X.shape[0])*self.variance
         else:
-            tmp1[X==X2.T] -= self.variance
+            tmp1[invdist2==0.] -= self.variance
 
-        grad = np.empty((X.shape[0], X2.shape[0], X.shape[1]), dtype=np.float64)
-        #grad = np.empty(X.shape, dtype=np.float64)
-        for q in range(self.input_dim):
-            tmpdist2 = (X[:,[q]]-X2[:,[q]].T) ** 2
-            grad[:, :, q] = ((tmp1*invdist2 - tmp2)*tmpdist2/l2[q] - tmp1)/l2[q]
-            #grad[:, :, q] = ((tmp1*(((tmpdist2)*invdist2/l2[q])-1)) - (tmp2*(tmpdist2))/l2[q])/l2[q]
-            #np.sum(((tmp1*(((tmpdist2)*invdist2/l2[q])-1)) - (tmp2*(tmpdist2))/l2[q])/l2[q], axis=1, out=grad[:,q])
-            #np.sum( - (tmp2*(tmpdist**2)), axis=1, out=grad[:,q])
+        #grad = np.empty((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]), dtype=np.float64)
+        dist = X[:,None,:] - X2[None,:,:]
+        dist = (dist[:,:,:,None]*dist[:,:,None,:])
+        I = np.ones((X.shape[0], X2.shape[0], X2.shape[1], X.shape[1]))*np.eye((X2.shape[1]))
+        grad = (((dL_dK*(tmp1*invdist2 - tmp2))[:,:,None,None] * dist)/l2[None,None,:,None]
+                - (dL_dK*tmp1)[:,:,None,None] * I)/l2[None,None,None,:]
         return grad
 
-    def gradients_XX_diag(self, dL_dK, X):
+    def gradients_XX_diag(self, dL_dK_diag, X):
         """
-        Given the derivative of the objective K(dL_dK), compute the second derivative of K wrt X and X2:
+        Given the derivative of the objective dL_dK, compute the second derivative of K wrt X:
 
         ..math:
-          \frac{\partial^2 K}{\partial X\partial X2}
+          \frac{\partial^2 K}{\partial X\partial X}
 
         ..returns:
-            dL2_dXdX2: NxMxQ, for X [NxQ] and X2[MxQ]
+            dL2_dXdX: [NxQxQ]
         """
-        return np.ones(X.shape) * self.variance/self.lengthscale**2
+        dL_dK_diag = dL_dK_diag.copy().reshape(-1, 1, 1)
+        assert (dL_dK_diag.size == X.shape[0]) or (dL_dK_diag.size == 1), "dL_dK_diag has to be given as row [N] or column vector [Nx1]"
+
+        l4 =  np.ones(X.shape[1])*self.lengthscale**2
+        return dL_dK_diag * (np.eye(X.shape[1]) * -self.dK2_drdr_diag()/(l4))[None, :,:]# np.zeros(X.shape+(X.shape[1],))
+        #return np.ones(X.shape) * d2L_dK * self.variance/self.lengthscale**2 # np.zeros(X.shape)
 
     def _gradients_X_pure(self, dL_dK, X, X2=None):
         invdist = self._inv_dist(X, X2)
@@ -307,6 +336,15 @@ class Stationary(Kern):
     def input_sensitivity(self, summarize=True):
         return self.variance*np.ones(self.input_dim)/self.lengthscale**2
 
+    def get_one_dimensional_kernel(self, dimensions):
+        """
+        Specially intended for the grid regression case
+        For a given covariance kernel, this method returns the corresponding kernel for
+        a single dimension. The resulting values can then be used in the algorithm for
+        reconstructing the full covariance matrix.
+        """
+        raise NotImplementedError("implement one dimensional variation of kernel")
+
 
 
 
@@ -315,11 +353,33 @@ class Exponential(Stationary):
         super(Exponential, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
     def K_of_r(self, r):
-        return self.variance * np.exp(-0.5 * r)
+        return self.variance * np.exp(-r)
 
     def dK_dr(self, r):
-        return -0.5*self.K_of_r(r)
+        return -self.K_of_r(r)
 
+    def to_dict(self):
+        input_dict = super(Exponential, self)._to_dict()
+        input_dict["class"] = "GPy.kern.Exponential"
+        return input_dict
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return Exponential(**input_dict)
+
+#    def sde(self):
+#        """
+#        Return the state space representation of the covariance.
+#        """
+#        F  = np.array([[-1/self.lengthscale]])
+#        L  = np.array([[1]])
+#        Qc = np.array([[2*self.variance/self.lengthscale]])
+#        H = np.array([[1]])
+#        Pinf = np.array([[self.variance]])
+#        # TODO: return the derivatives as well
+#
+#        return (F, L, Qc, H, Pinf)
 
 
 
@@ -356,6 +416,16 @@ class Matern32(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Mat32'):
         super(Matern32, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
+    def to_dict(self):
+        input_dict = super(Matern32, self)._to_dict()
+        input_dict["class"] = "GPy.kern.Matern32"
+        return input_dict
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return Matern32(**input_dict)
+
     def K_of_r(self, r):
         return self.variance * (1. + np.sqrt(3.) * r) * np.exp(-np.sqrt(3.) * r)
 
@@ -388,6 +458,41 @@ class Matern32(Stationary):
         F1lower = np.array([f(lower) for f in F1])[:, None]
         return(self.lengthscale ** 3 / (12.*np.sqrt(3) * self.variance) * G + 1. / self.variance * np.dot(Flower, Flower.T) + self.lengthscale ** 2 / (3.*self.variance) * np.dot(F1lower, F1lower.T))
 
+    def sde(self):
+        """
+        Return the state space representation of the covariance.
+        """
+        variance = float(self.variance.values)
+        lengthscale = float(self.lengthscale.values)
+        foo  = np.sqrt(3.)/lengthscale
+        F    = np.array([[0, 1], [-foo**2, -2*foo]])
+        L    = np.array([[0], [1]])
+        Qc   = np.array([[12.*np.sqrt(3) / lengthscale**3 * variance]])
+        H    = np.array([[1, 0]])
+        Pinf = np.array([[variance, 0],
+        [0,              3.*variance/(lengthscale**2)]])
+        # Allocate space for the derivatives
+        dF    = np.empty([F.shape[0],F.shape[1],2])
+        dQc   = np.empty([Qc.shape[0],Qc.shape[1],2])
+        dPinf = np.empty([Pinf.shape[0],Pinf.shape[1],2])
+        # The partial derivatives
+        dFvariance       = np.zeros([2,2])
+        dFlengthscale    = np.array([[0,0],
+        [6./lengthscale**3,2*np.sqrt(3)/lengthscale**2]])
+        dQcvariance      = np.array([12.*np.sqrt(3)/lengthscale**3])
+        dQclengthscale   = np.array([-3*12*np.sqrt(3)/lengthscale**4*variance])
+        dPinfvariance    = np.array([[1,0],[0,3./lengthscale**2]])
+        dPinflengthscale = np.array([[0,0],
+        [0,-6*variance/lengthscale**3]])
+        # Combine the derivatives
+        dF[:,:,0]    = dFvariance
+        dF[:,:,1]    = dFlengthscale
+        dQc[:,:,0]   = dQcvariance
+        dQc[:,:,1]   = dQclengthscale
+        dPinf[:,:,0] = dPinfvariance
+        dPinf[:,:,1] = dPinflengthscale
+
+        return (F, L, Qc, H, Pinf, dF, dQc, dPinf)
 
 class Matern52(Stationary):
     """
@@ -399,6 +504,16 @@ class Matern52(Stationary):
     """
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='Mat52'):
         super(Matern52, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
+
+    def to_dict(self):
+        input_dict = super(Matern52, self)._to_dict()
+        input_dict["class"] = "GPy.kern.Matern52"
+        return input_dict
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return Matern52(**input_dict)
 
     def K_of_r(self, r):
         return self.variance*(1+np.sqrt(5.)*r+5./3*r**2)*np.exp(-np.sqrt(5.)*r)
@@ -455,6 +570,16 @@ class ExpQuad(Stationary):
     def __init__(self, input_dim, variance=1., lengthscale=None, ARD=False, active_dims=None, name='ExpQuad'):
         super(ExpQuad, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
 
+    def to_dict(self):
+        input_dict = super(ExpQuad, self)._to_dict()
+        input_dict["class"] = "GPy.kern.ExpQuad"
+        return input_dict
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return ExpQuad(**input_dict)
+
     def K_of_r(self, r):
         return self.variance * np.exp(-0.5 * r**2)
 
@@ -488,6 +613,17 @@ class RatQuad(Stationary):
         self.power = Param('power', power, Logexp())
         self.link_parameters(self.power)
 
+    def to_dict(self):
+        input_dict = super(RatQuad, self)._to_dict()
+        input_dict["class"] = "GPy.kern.RatQuad"
+        input_dict["power"] = self.power.values.tolist()
+        return input_dict
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return RatQuad(**input_dict)
+
     def K_of_r(self, r):
         r2 = np.square(r)
 #         return self.variance*np.power(1. + r2/2., -self.power)
@@ -510,5 +646,3 @@ class RatQuad(Stationary):
     def update_gradients_diag(self, dL_dKdiag, X):
         super(RatQuad, self).update_gradients_diag(dL_dKdiag, X)
         self.power.gradient = 0.
-
-

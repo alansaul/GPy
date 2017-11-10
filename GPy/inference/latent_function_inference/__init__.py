@@ -41,6 +41,26 @@ class LatentFunctionInference(object):
         """
         pass
 
+    def _to_dict(self):
+        input_dict = {}
+        return input_dict
+
+    def to_dict(self):
+        raise NotImplementedError
+
+    @staticmethod
+    def from_dict(input_dict):
+        import copy
+        input_dict = copy.deepcopy(input_dict)
+        inference_class = input_dict.pop('class')
+        import GPy
+        inference_class = eval(inference_class)
+        return inference_class._from_dict(inference_class, input_dict)
+
+    @staticmethod
+    def _from_dict(inference_class, input_dict):
+        return inference_class(**input_dict)
+
 class InferenceMethodList(LatentFunctionInference, list):
 
     def on_optimization_start(self):
@@ -67,8 +87,13 @@ from GPy.inference.latent_function_inference.var_dtc import VarDTC
 from .expectation_propagation import EP, EPDTC
 from .dtc import DTC
 from .fitc import FITC
+from .pep import PEP
 from .var_dtc_parallel import VarDTC_minibatch
 from .var_gauss import VarGauss
+from .gaussian_grid_inference import GaussianGridInference
+from .vardtc_svi_multiout import VarDTC_SVI_Multiout
+from .vardtc_svi_multiout_miss import VarDTC_SVI_Multiout_Miss
+
 
 # class FullLatentFunctionData(object):
 #

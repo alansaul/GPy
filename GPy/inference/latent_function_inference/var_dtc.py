@@ -22,7 +22,7 @@ class VarDTC(LatentFunctionInference):
 
     """
     const_jitter = 1e-8
-    def __init__(self, limit=3):
+    def __init__(self, limit=1):
         from paramz.caching import Cacher
         self.limit = limit
         self.get_trYYT = Cacher(self._get_trYYT, limit)
@@ -88,6 +88,10 @@ class VarDTC(LatentFunctionInference):
             Kmm = kern.K(Z).copy()
             diag.add(Kmm, self.const_jitter)
             Lm = jitchol(Kmm)
+        else:
+            Kmm = tdot(Lm)
+            symmetrify(Kmm)
+
 
         # The rather complex computations of A, and the psi stats
         if uncertain_inputs:

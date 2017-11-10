@@ -1,6 +1,6 @@
 # Copyright (c) 2012, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
-
+from __future__ import division
 
 import unittest
 import numpy as np
@@ -27,7 +27,7 @@ class MiscTests(unittest.TestCase):
         Test whether the predicted variance of normal GP goes negative under numerical unstable situation.
         Thanks simbartonels@github for reporting the bug and providing the following example.
         """
-        
+
         # set seed for reproducability
         np.random.seed(3)
         # Definition of the Branin test function
@@ -54,7 +54,7 @@ class MiscTests(unittest.TestCase):
         m.randomize()
         m.optimize()
         # Compute the mean of model prediction on 1e5 Monte Carlo samples
-        Xp = np.random.uniform(size=(1e5,2))
+        Xp = np.random.uniform(size=(int(1e5),2))
         Xp[:,0] = Xp[:,0]*15-5
         Xp[:,1] = Xp[:,1]*15
         _, var = m.predict(Xp)
@@ -69,13 +69,13 @@ class MiscTests(unittest.TestCase):
         K_hat = k.K(self.X_new) - k.K(self.X_new, self.X).dot(Kinv).dot(k.K(self.X, self.X_new))
         mu_hat = k.K(self.X_new, self.X).dot(Kinv).dot(m.Y_normalized)
 
-        mu, covar = m._raw_predict(self.X_new, full_cov=True)
+        mu, covar = m.predict_noiseless(self.X_new, full_cov=True)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(covar.shape, (self.N_new, self.N_new))
         np.testing.assert_almost_equal(K_hat, covar)
         np.testing.assert_almost_equal(mu_hat, mu)
 
-        mu, var = m._raw_predict(self.X_new)
+        mu, var = m.predict_noiseless(self.X_new)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(var.shape, (self.N_new, 1))
         np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
@@ -91,18 +91,32 @@ class MiscTests(unittest.TestCase):
         k = GPy.kern.RBF(1)
         m2 = GPy.models.GPRegression(self.X, (Y-mu)/std, kernel=k, normalizer=False)
         m2[:] = m[:]
+
         mu1, var1 = m.predict(m.X, full_cov=True)
         mu2, var2 = m2.predict(m2.X, full_cov=True)
         np.testing.assert_allclose(mu1, (mu2*std)+mu)
-        np.testing.assert_allclose(var1, var2)
+        np.testing.assert_allclose(var1, var2*std**2)
+
         mu1, var1 = m.predict(m.X, full_cov=False)
         mu2, var2 = m2.predict(m2.X, full_cov=False)
+
         np.testing.assert_allclose(mu1, (mu2*std)+mu)
-        np.testing.assert_allclose(var1, var2)
+        np.testing.assert_allclose(var1, var2*std**2)
 
         q50n = m.predict_quantiles(m.X, (50,))
         q50 = m2.predict_quantiles(m2.X, (50,))
+
         np.testing.assert_allclose(q50n[0], (q50[0]*std)+mu)
+
+        # Test variance component:
+        qs = np.array([2.5, 97.5])
+        # The quantiles get computed before unormalization
+        # And transformed using the mean transformation:
+        c = np.random.choice(self.X.shape[0])
+        q95 = m2.predict_quantiles(self.X[[c]], qs)
+        mu, var = m2.predict(self.X[[c]])
+        from scipy.stats import norm
+        np.testing.assert_allclose((mu+(norm.ppf(qs/100.)*np.sqrt(var))).flatten(), np.array(q95).flatten())
 
     def check_jacobian(self):
         try:
@@ -166,9 +180,9 @@ class MiscTests(unittest.TestCase):
         # S = \int (f(x) - m)^2q(x|mu,S) dx = \int f(x)^2 q(x) dx - mu**2 = 4(mu^2 + S) - (2.mu)^2 = 4S
         Y_mu_true = 2*X_pred_mu
         Y_var_true = 4*X_pred_var
-        Y_mu_pred, Y_var_pred = m._raw_predict(X_pred)
-        np.testing.assert_allclose(Y_mu_true, Y_mu_pred, rtol=1e-4)
-        np.testing.assert_allclose(Y_var_true, Y_var_pred, rtol=1e-4)
+        Y_mu_pred, Y_var_pred = m.predict_noiseless(X_pred)
+        np.testing.assert_allclose(Y_mu_true, Y_mu_pred, rtol=1e-3)
+        np.testing.assert_allclose(Y_var_true, Y_var_pred, rtol=1e-3)
 
     def test_sparse_raw_predict(self):
         k = GPy.kern.RBF(1)
@@ -181,13 +195,13 @@ class MiscTests(unittest.TestCase):
         K_hat = k.K(self.X_new) - k.K(self.X_new, Z).dot(Kinv).dot(k.K(Z, self.X_new))
         K_hat = np.clip(K_hat, 1e-15, np.inf)
 
-        mu, covar = m._raw_predict(self.X_new, full_cov=True)
+        mu, covar = m.predict_noiseless(self.X_new, full_cov=True)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(covar.shape, (self.N_new, self.N_new))
         np.testing.assert_almost_equal(K_hat, covar)
         # np.testing.assert_almost_equal(mu_hat, mu)
 
-        mu, var = m._raw_predict(self.X_new)
+        mu, var = m.predict_noiseless(self.X_new)
         self.assertEquals(mu.shape, (self.N_new, self.D))
         self.assertEquals(var.shape, (self.N_new, 1))
         np.testing.assert_almost_equal(np.diag(K_hat)[:, None], var)
@@ -314,6 +328,41 @@ class MiscTests(unittest.TestCase):
         m.checkgrad()
         print(m)
 
+    def test_mrd(self):
+        from GPy.inference.latent_function_inference import InferenceMethodList, VarDTC
+        from GPy.likelihoods import Gaussian
+        Y1 = np.random.normal(0, 1, (40, 13))
+        Y2 = np.random.normal(0, 1, (40, 6))
+        Y3 = np.random.normal(0, 1, (40, 8))
+        Q = 5
+        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q,
+                           )
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+
+        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, initx='PCA_single',
+                           initz='random',
+                           kernel=[GPy.kern.RBF(Q, ARD=1) for _ in range(3)],
+                           inference_method=InferenceMethodList([VarDTC() for _ in range(3)]),
+                           likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(3)])
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+
+        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, initx='random',
+                           initz='random',
+                           kernel=GPy.kern.RBF(Q, ARD=1),
+                           )
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+
+        m = GPy.models.MRD(dict(data1=Y1, data2=Y2, data3=Y3), Q, X=np.random.normal(0,1,size=(40,Q)),
+                           X_variance=False,
+                           kernel=GPy.kern.RBF(Q, ARD=1),
+                           likelihoods = [Gaussian(name='Gaussian_noise'.format(i)) for i in range(3)])
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+
+
     def test_model_set_params(self):
         m = GPy.models.GPRegression(self.X, self.Y)
         lengthscale = np.random.uniform()
@@ -350,6 +399,68 @@ class MiscTests(unittest.TestCase):
         m.optimize()
         print(m)
 
+    def test_input_warped_gp_identity(self):
+        """
+        A InputWarpedGP with the identity warping function should be
+        equal to a standard GP.
+        """
+        k = GPy.kern.RBF(1)
+        m = GPy.models.GPRegression(self.X, self.Y, kernel=k)
+        m.optimize()
+        preds = m.predict(self.X)
+
+        warp_k = GPy.kern.RBF(1)
+        warp_f = GPy.util.input_warping_functions.IdentifyWarping()
+        warp_m = GPy.models.InputWarpedGP(self.X, self.Y, kernel=warp_k, warping_function=warp_f)
+        warp_m.optimize()
+        warp_preds = warp_m.predict(self.X)
+
+        np.testing.assert_almost_equal(preds, warp_preds, decimal=4)
+
+    def test_kumar_warping_gradient(self):
+        n_X = 100
+        np.random.seed(0)
+        X = np.random.randn(n_X, 2)
+        Y = np.sum(np.sin(X), 1).reshape(n_X, 1)
+
+        k1 = GPy.kern.Linear(2)
+        m1 = GPy.models.InputWarpedGP(X, Y, kernel=k1)
+        m1.randomize()
+        self.assertEquals(m1.checkgrad(), True)
+
+        k2 = GPy.kern.RBF(2)
+        m2 = GPy.models.InputWarpedGP(X, Y, kernel=k2)
+        m2.randomize()
+        m2.checkgrad()
+        self.assertEquals(m2.checkgrad(), True)
+
+        k3 = GPy.kern.Matern52(2)
+        m3 = GPy.models.InputWarpedGP(X, Y, kernel=k3)
+        m3.randomize()
+        m3.checkgrad()
+        self.assertEquals(m3.checkgrad(), True)
+
+    def test_kumar_warping_parameters(self):
+        np.random.seed(1)
+        X = np.random.rand(5, 2)
+        epsilon = 1e-6
+
+        # testing warping indices
+        warping_ind_1 = [0, 1, 2]
+        warping_ind_2 = [-1, 1, 2]
+        warping_ind_3 = [0, 1.5, 2]
+        self.failUnlessRaises(ValueError, GPy.util.input_warping_functions.KumarWarping, X, warping_ind_1)
+        self.failUnlessRaises(ValueError, GPy.util.input_warping_functions.KumarWarping, X, warping_ind_2)
+        self.failUnlessRaises(ValueError, GPy.util.input_warping_functions.KumarWarping, X, warping_ind_3)
+
+        # testing Xmin and Xmax
+        Xmin_1, Xmax_1 = None, [1, 1]
+        Xmin_2, Xmax_2 = [0, 0], None
+        Xmin_3, Xmax_3 = [0, 0, 0], [1, 1]
+        self.failUnlessRaises(ValueError, GPy.util.input_warping_functions.KumarWarping, X, [0, 1], epsilon, Xmin_1, Xmax_1)
+        self.failUnlessRaises(ValueError, GPy.util.input_warping_functions.KumarWarping, X, [0, 1], epsilon, Xmin_2, Xmax_2)
+        self.failUnlessRaises(ValueError, GPy.util.input_warping_functions.KumarWarping, X, [0, 1], epsilon, Xmin_3, Xmax_3)
+
     def test_warped_gp_identity(self):
         """
         A WarpedGP with the identity warping function should be
@@ -361,18 +472,27 @@ class MiscTests(unittest.TestCase):
         preds = m.predict(self.X)
 
         warp_k = GPy.kern.RBF(1)
-        warp_f = GPy.util.warping_functions.IdentityFunction()
-        warp_m = GPy.models.WarpedGP(self.X, self.Y, kernel=warp_k, warping_function=warp_f)
+        warp_f = GPy.util.warping_functions.IdentityFunction(closed_inverse=False)
+        warp_m = GPy.models.WarpedGP(self.X, self.Y, kernel=warp_k,
+                                     warping_function=warp_f)
         warp_m.optimize()
         warp_preds = warp_m.predict(self.X)
 
-        np.testing.assert_almost_equal(preds, warp_preds)
+        warp_k_exact = GPy.kern.RBF(1)
+        warp_f_exact = GPy.util.warping_functions.IdentityFunction()
+        warp_m_exact = GPy.models.WarpedGP(self.X, self.Y, kernel=warp_k_exact,
+                                           warping_function=warp_f_exact)
+        warp_m_exact.optimize()
+        warp_preds_exact = warp_m_exact.predict(self.X)
 
-    @unittest.skip('Comment this to plot the modified sine function')
-    def test_warped_gp_sine(self):
+        np.testing.assert_almost_equal(preds, warp_preds, decimal=4)
+        np.testing.assert_almost_equal(preds, warp_preds_exact, decimal=4)
+
+    def test_warped_gp_log(self):
         """
-        A test replicating the sine regression problem from
-        Snelson's paper.
+        A WarpedGP with the log warping function should be
+        equal to a standard GP with log labels.
+        Note that we predict the median here.
         """
         X = (2 * np.pi) * np.random.random(151) - np.pi
         Y = np.sin(X) + np.random.normal(0,0.1,151)
@@ -399,14 +519,121 @@ class MiscTests(unittest.TestCase):
         #print(warp_m.checkgrad())
         print(warp_m)
         print(warp_m['.*warp.*'])
+        k = GPy.kern.RBF(1)
+        Y = np.abs(self.Y)
+        logY = np.log(Y)
+        m = GPy.models.GPRegression(self.X, logY, kernel=k)
+        m.optimize()
+        preds = m.predict(self.X)[0]
+
+        warp_k = GPy.kern.RBF(1)
+        warp_f = GPy.util.warping_functions.LogFunction(closed_inverse=False)
+        warp_m = GPy.models.WarpedGP(self.X, Y, kernel=warp_k,
+                                     warping_function=warp_f)
+        warp_m.optimize()
+        warp_preds = warp_m.predict(self.X, median=True)[0]
+
+        warp_k_exact = GPy.kern.RBF(1)
+        warp_f_exact = GPy.util.warping_functions.LogFunction()
+        warp_m_exact = GPy.models.WarpedGP(self.X, Y, kernel=warp_k_exact,
+                                           warping_function=warp_f_exact)
+        warp_m_exact.optimize(messages=True)
+        warp_preds_exact = warp_m_exact.predict(self.X, median=True)[0]
+
+        np.testing.assert_almost_equal(np.exp(preds), warp_preds, decimal=4)
+        np.testing.assert_almost_equal(np.exp(preds), warp_preds_exact, decimal=4)
+
+    def test_warped_gp_cubic_sine(self, max_iters=100):
+        """
+        A test replicating the cubic sine regression problem from
+        Snelson's paper. This test doesn't have any assertions, it's
+        just to ensure coverage of the tanh warping function code.
+        """
+        X = (2 * np.pi) * np.random.random(151) - np.pi
+        Y = np.sin(X) + np.random.normal(0,0.2,151)
+        Y = np.array([np.power(abs(y),float(1)/3) * (1,-1)[y<0] for y in Y])
+        X = X[:, None]
+        Y = Y[:, None]
+
+        warp_m = GPy.models.WarpedGP(X, Y)#, kernel=warp_k)#, warping_function=warp_f)
+        warp_m['.*\.d'].constrain_fixed(1.0)
+        warp_m.optimize_restarts(parallel=False, robust=False, num_restarts=5,
+                                 max_iters=max_iters)
+        warp_m.predict(X)
+        warp_m.predict_quantiles(X)
+        warp_m.log_predictive_density(X, Y)
         warp_m.predict_in_warped_space = False
         warp_m.plot()
         warp_m.predict_in_warped_space = True
         warp_m.plot()
-        warp_f.plot(X.min()-10, X.max()+10)
-        plt.show()
 
+    def test_offset_regression(self):
+        #Tests GPy.models.GPOffsetRegression. Using two small time series
+        #from a sine wave, we confirm the algorithm determines that the
+        #likelihood is maximised when the offset hyperparameter is approximately
+        #equal to the actual offset in X between the two time series.
+        offset = 3
+        X1 = np.arange(0,50,5.0)[:,None]
+        X2 = np.arange(0+offset,50+offset,5.0)[:,None]
+        X = np.vstack([X1,X2])
+        ind = np.vstack([np.zeros([10,1]),np.ones([10,1])])
+        X = np.hstack([X,ind])
+        Y = np.sin((X[0:10,0])/30.0)[:,None]
+        Y = np.vstack([Y,Y])
 
+        m = GPy.models.GPOffsetRegression(X,Y)
+        m.rbf.lengthscale=5.0 #make it something other than one to check our gradients properly!
+        assert m.checkgrad(), "Gradients of offset parameters don't match numerical approximations."
+        m.optimize()
+        assert np.abs(m.offset[0]-offset)<0.1, ("GPOffsetRegression model failing to estimate correct offset (value estimated = %0.2f instead of %0.2f)" % (m.offset[0], offset))
+
+    def test_logistic_basis_func_gradients(self):
+        X = np.random.uniform(-4, 4, (20, 5))
+        points = np.random.uniform(X.min(0), X.max(0), X.shape[1])
+        ks = []
+        for i in range(points.shape[0]):
+            if (i%2==0) and (i%3!=0):
+                self.assertRaises(AssertionError, GPy.kern.LogisticBasisFuncKernel, 1, points, ARD=i%2==0, ARD_slope=i%3==0, active_dims=[i])
+            else:
+                ks.append(GPy.kern.LogisticBasisFuncKernel(1, points, ARD=i%2==0, ARD_slope=i%3==0, active_dims=[i]))
+        k = GPy.kern.Add(ks)
+        k.randomize()
+
+        Y = np.random.normal(0, 1, (X.shape[0], 1))
+        m = GPy.models.GPRegression(X, Y, kernel=k.copy())
+        assert m.checkgrad()
+
+    def test_posterior_inf_basis_funcs(self):
+        X = np.random.uniform(-4, 1, (50, 1))
+
+        # Logistic:
+        k = GPy.kern.LogisticBasisFuncKernel(1, [0, -2])
+
+        true_w = [1, 2]
+        true_slope = [5, -2]
+
+        Y = 0
+        for w, s, c in zip(true_w, true_slope, k.centers[0]):
+            Y += w/(1+np.exp(-s*(X-c)))
+        Y += np.random.normal(0, .000001)
+
+        m = GPy.models.GPRegression(X,Y,kernel=k.copy())
+        #m.likelihood.fix(1e-6)
+        m.optimize()
+
+        wu, wv = m.kern.posterior_inf()
+        #_sort = np.argsort(wu.flat)
+
+        #from scipy.stats import norm
+        #confidence_intervals = np.array(norm.interval(.95, loc=wu.flat[_sort], scale=np.sqrt(np.diag(wv))[_sort])).T
+        #for i in range(wu.size):
+        #    s,t = confidence_intervals[i]
+        #    v = true_w[i]
+        #    assert ((s<v)&(v<t)), "didnt find true w within the 95% confidence interval of the predicted values"
+
+        np.testing.assert_allclose(np.sort(wu.flat), np.sort(true_w), rtol=1e-4)
+        np.testing.assert_allclose(np.diag(wv), 0, atol=1e-4)
+        np.testing.assert_allclose(np.sort(m.kern.slope.flat), np.sort(true_slope), rtol=1e-4)
 
 class GradientTests(np.testing.TestCase):
     def setUp(self):
@@ -639,16 +866,18 @@ class GradientTests(np.testing.TestCase):
 
     def test_GP_EP_probit(self):
         N = 20
-        X = np.hstack([np.random.normal(5, 2, N / 2), np.random.normal(10, 2, N / 2)])[:, None]
-        Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
+        Nhalf = int(N/2)
+        X = np.hstack([np.random.normal(5, 2, Nhalf), np.random.normal(10, 2, Nhalf)])[:, None]
+        Y = np.hstack([np.ones(Nhalf), np.zeros(Nhalf)])[:, None]
         kernel = GPy.kern.RBF(1)
         m = GPy.models.GPClassification(X, Y, kernel=kernel)
         self.assertTrue(m.checkgrad())
 
     def test_sparse_EP_DTC_probit(self):
         N = 20
-        X = np.hstack([np.random.normal(5, 2, N / 2), np.random.normal(10, 2, N / 2)])[:, None]
-        Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
+        Nhalf = int(N/2)
+        X = np.hstack([np.random.normal(5, 2, Nhalf), np.random.normal(10, 2, Nhalf)])[:, None]
+        Y = np.hstack([np.ones(Nhalf), np.zeros(Nhalf)])[:, None]
         Z = np.linspace(0, 15, 4)[:, None]
         kernel = GPy.kern.RBF(1)
         m = GPy.models.SparseGPClassification(X, Y, kernel=kernel, Z=Z)
@@ -656,8 +885,9 @@ class GradientTests(np.testing.TestCase):
 
     def test_sparse_EP_DTC_probit_uncertain_inputs(self):
         N = 20
-        X = np.hstack([np.random.normal(5, 2, N / 2), np.random.normal(10, 2, N / 2)])[:, None]
-        Y = np.hstack([np.ones(N / 2), np.zeros(N / 2)])[:, None]
+        Nhalf = int(N/2)
+        X = np.hstack([np.random.normal(5, 2, Nhalf), np.random.normal(10, 2, Nhalf)])[:, None]
+        Y = np.hstack([np.ones(Nhalf), np.zeros(Nhalf)])[:, None]
         Z = np.linspace(0, 15, 4)[:, None]
         X_var = np.random.uniform(0.1, 0.2, X.shape)
         kernel = GPy.kern.RBF(1)
@@ -750,6 +980,7 @@ class GradientTests(np.testing.TestCase):
         self.assertTrue( np.allclose(var1, var2) )
 
     def test_gp_VGPC(self):
+        np.random.seed(10)
         num_obs = 25
         X = np.random.randint(0, 140, num_obs)
         X = X[:, None]
@@ -757,19 +988,143 @@ class GradientTests(np.testing.TestCase):
         kern = GPy.kern.Bias(1) + GPy.kern.RBF(1)
         lik = GPy.likelihoods.Gaussian()
         m = GPy.models.GPVariationalGaussianApproximation(X, Y, kernel=kern, likelihood=lik)
+        m.randomize()
         self.assertTrue(m.checkgrad())
-        
+
     def test_ssgplvm(self):
         from GPy import kern
         from GPy.models import SSGPLVM
         from GPy.examples.dimensionality_reduction import _simulate_matern
-    
+
+        np.random.seed(10)
         D1, D2, D3, N, num_inducing, Q = 13, 5, 8, 45, 3, 9
         _, _, Ylist = _simulate_matern(D1, D2, D3, N, num_inducing, False)
         Y = Ylist[0]
         k = kern.Linear(Q, ARD=True)  # + kern.white(Q, _np.exp(-2)) # + kern.bias(Q)
         # k = kern.RBF(Q, ARD=True, lengthscale=10.)
         m = SSGPLVM(Y, Q, init="rand", num_inducing=num_inducing, kernel=k, group_spike=True)
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+
+    def test_multiout_regression(self):
+        np.random.seed(0)
+        import GPy
+
+        N = 10
+        N_train = 5
+        D = 4
+        noise_var = .3
+
+        k = GPy.kern.RBF(1,lengthscale=0.1)
+        x = np.random.rand(N,1)
+        cov = k.K(x)
+
+        k_r = GPy.kern.RBF(2,lengthscale=.4)
+        x_r = np.random.rand(D,2)
+        cov_r = k_r.K(x_r)
+
+        cov_all = np.kron(cov_r,cov)
+        L = GPy.util.linalg.jitchol(cov_all)
+
+        y_latent = L.dot(np.random.randn(N*D)).reshape(D,N).T
+
+        x_test = x[N_train:]
+        y_test = y_latent[N_train:]
+        x = x[:N_train]
+        y = y_latent[:N_train]+np.random.randn(N_train,D)*np.sqrt(noise_var)
+
+        Mr = D
+        Mc = x.shape[0]
+        Qr = 5
+        Qc = x.shape[1]
+
+        m_mr = GPy.models.GPMultioutRegression(x,y,Xr_dim=Qr, kernel_row=GPy.kern.RBF(Qr,ARD=True), num_inducing=(Mc,Mr),init='GP')
+        m_mr.optimize_auto(max_iters=1)
+        m_mr.randomize()
+        self.assertTrue(m_mr.checkgrad())
+
+        m_mr = GPy.models.GPMultioutRegression(x,y,Xr_dim=Qr, kernel_row=GPy.kern.RBF(Qr,ARD=True), num_inducing=(Mc,Mr),init='rand')
+        m_mr.optimize_auto(max_iters=1)
+        m_mr.randomize()
+        self.assertTrue(m_mr.checkgrad())
+
+    def test_multiout_regression_md(self):
+        import GPy
+        np.random.seed(0)
+
+        N = 20
+        N_train = 5
+        D = 8
+        noise_var = 0.3
+
+        k = GPy.kern.RBF(1,lengthscale=0.1)
+        x_raw = np.random.rand(N*D,1)
+
+        # dimension assignment
+        D_list = []
+        for i in range(2):
+            while True:
+                D_sub_list = []
+                ratios = []
+                r_p = 0.
+                for j in range(3):
+                    ratios.append(np.random.rand()*(1-r_p)+r_p)
+                    D_sub_list.append(int((ratios[-1]-r_p)*4*N_train))
+                    r_p = ratios[-1]
+                D_sub_list.append(4*N_train - np.sum(D_sub_list))
+                if (np.array(D_sub_list)!=0).all():
+                    D_list.extend([a+N-N_train for a in D_sub_list])
+                    break
+
+        cov = k.K(x_raw)
+
+        k_r = GPy.kern.RBF(2,lengthscale=.4)
+        x_r = np.random.rand(D,2)
+        cov_r = k_r.K(x_r)
+
+        cov_all = np.repeat(np.repeat(cov_r,D_list,axis=0),D_list,axis=1)*cov
+        L = GPy.util.linalg.jitchol(cov_all)
+
+        y_latent = L.dot(np.random.randn(N*D))
+
+        x = np.zeros((D*N_train,))
+        y = np.zeros((D*N_train,))
+        x_test = np.zeros((D*(N-N_train),))
+        y_test = np.zeros((D*(N-N_train),))
+        indexD = np.zeros((D*N_train),dtype=np.int)
+        indexD_test = np.zeros((D*(N-N_train)),dtype=np.int)
+
+        offset_all = 0
+        offset_train = 0
+        offset_test = 0
+        for i in range(D):
+            D_test = N-N_train
+            D_train = D_list[i] - N+N_train
+            y[offset_train:offset_train+D_train] = y_latent[offset_all:offset_all+D_train]
+            x[offset_train:offset_train+D_train] = x_raw[offset_all:offset_all+D_train,0]
+            y_test[offset_test:offset_test+D_test] = y_latent[offset_all+D_train:offset_all+D_train+D_test]
+            x_test[offset_test:offset_test+D_test] = x_raw[offset_all+D_train:offset_all+D_train+D_test,0]
+            indexD[offset_train:offset_train+D_train] = i
+            indexD_test[offset_test:offset_test+D_test] = i
+            offset_train += D_train
+            offset_test += D_test
+            offset_all += D_train+D_test
+
+        y_noisefree = y.copy()
+        y += np.random.randn(*y.shape)*np.sqrt(noise_var)
+        x_flat = x.flatten()[:,None]
+        y_flat = y.flatten()[:,None]
+
+        Mr, Mc, Qr, Qc = 4,3,2,1
+
+        m = GPy.models.GPMultioutRegressionMD(x_flat,y_flat,indexD,Xr_dim=Qr, kernel_row=GPy.kern.RBF(Qr,ARD=False), num_inducing=(Mc,Mr))
+        m.optimize_auto(max_iters=1)
+        m.randomize()
+        self.assertTrue(m.checkgrad())
+
+        m = GPy.models.GPMultioutRegressionMD(x_flat,y_flat,indexD,Xr_dim=Qr, kernel_row=GPy.kern.RBF(Qr,ARD=False), num_inducing=(Mc,Mr),init='rand')
+        m.optimize_auto(max_iters=1)
+        m.randomize()
         self.assertTrue(m.checkgrad())
 
 if __name__ == "__main__":

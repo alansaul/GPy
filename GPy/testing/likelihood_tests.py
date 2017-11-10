@@ -117,9 +117,17 @@ class TestNoiseModels(object):
         self.positive_Y = np.exp(self.Y.copy())
         tmp = np.round(self.X[:, 0]*3-3)[:, None] + np.random.randint(0,3, self.X.shape[0])[:, None]
         self.integer_Y = np.where(tmp > 0, tmp, 0)
-
+        self.ns = np.random.poisson(50, size=self.N)[:, None]
+        p = np.abs(np.cos(2*np.pi*self.X + np.random.normal(scale=.2, size=(self.N, self.D)))).mean(1)
+        self.binomial_Y = np.array([np.random.binomial(int(self.ns[i]), p[i]) for i in range(p.shape[0])])[:, None]
+        
         self.var = 0.2
         self.deg_free = 4.0
+        censored = np.zeros_like(self.Y)
+        random_inds = np.random.choice(self.N, int(self.N / 2), replace=True)
+        censored[random_inds] = 1
+        self.Y_metadata = dict()
+        self.Y_metadata['censored'] = censored
 
         #Make a bigger step as lower bound can be quite curved
         self.step = 1e-4
@@ -204,15 +212,6 @@ class TestNoiseModels(object):
                 },
                 "laplace": True
             },
-            #"Student_t_log": {
-            #"model": GPy.likelihoods.StudentT(gp_link=link_functions.Log(), deg_free=5, sigma2=self.var),
-            #"grad_params": {
-            #"names": [".*t_noise"],
-            #"vals": [self.var],
-            #"constraints": [(".*t_noise", self.constrain_positive), (".*deg_free", self.constrain_fixed)]
-            #},
-            #"laplace": True
-            #},
             "Gaussian_default": {
                 "model": GPy.likelihoods.Gaussian(variance=self.var),
                 "grad_params": {
@@ -273,6 +272,27 @@ class TestNoiseModels(object):
                 "laplace": True,
                 "ep": False #Should work though...
             },
+            "Binomial_default": {
+                "model": GPy.likelihoods.Binomial(),
+                "link_f_constraints": [partial(self.constrain_bounded, lower=0, upper=1)],
+                "Y": self.binomial_Y,
+                "Y_metadata": {'trials': self.ns},
+                "laplace": True,
+            },
+            "loglogistic_censored": {
+                "model": GPy.likelihoods.LogLogistic(),
+                "link_f_constraints": [self.constrain_positive],
+                "Y": self.positive_Y,
+                "Y_metadata": self.Y_metadata,
+                "laplace": True
+            },
+            "weibull_censored": {
+                "model": GPy.likelihoods.Weibull(),
+                "link_f_constraints": [self.constrain_positive],
+                "Y": self.positive_Y,
+                "Y_metadata": self.Y_metadata,
+                "laplace": True
+            }
             #,
             #GAMMA needs some work!"Gamma_default": {
             #"model": GPy.likelihoods.Gamma(),
@@ -569,7 +589,6 @@ class TestNoiseModels(object):
         white_var = 1e-4
         kernel = GPy.kern.RBF(X.shape[1]) + GPy.kern.White(X.shape[1])
         laplace_likelihood = GPy.inference.latent_function_inference.Laplace()
-
         m = GPy.core.GP(X.copy(), Y.copy(), kernel, likelihood=model, Y_metadata=Y_metadata, inference_method=laplace_likelihood)
         m.kern.white.constrain_fixed(white_var)
 

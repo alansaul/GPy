@@ -3,7 +3,6 @@
 import sys
 import numpy as np
 from ...core.parameterization.parameterized import Parameterized
-from paramz.core.observable_array import ObsAr
 from paramz.caching import Cache_this
 from .kernel_slice_operations import KernCallsViaSlicerMeta
 from functools import reduce
@@ -15,10 +14,10 @@ class Kern(Parameterized):
     # This adds input slice support. The rather ugly code for slicing can be
     # found in kernel_slice_operations
     # __meataclass__ is ignored in Python 3 - needs to be put in the function definiton
-    #__metaclass__ = KernCallsViaSlicerMeta
-    #Here, we use the Python module six to support Py3 and Py2 simultaneously
+    # __metaclass__ = KernCallsViaSlicerMeta
+    # Here, we use the Python module six to support Py3 and Py2 simultaneously
     #===========================================================================
-    _support_GPU=False
+    _support_GPU = False
     def __init__(self, input_dim, active_dims, name, useGPU=False, *a, **kw):
         """
         The base class for a kernel: a positive definite function
@@ -47,12 +46,12 @@ class Kern(Parameterized):
         self.input_dim = int(input_dim)
 
         if active_dims is None:
-            active_dims = np.arange(input_dim)
-        
-        self.active_dims = np.asarray(active_dims, np.int_)
-        
-        self._all_dims_active = np.atleast_1d(self.active_dims).astype(int)
-        
+            active_dims = np.arange(input_dim, dtype=np.int_)
+
+        self.active_dims = np.atleast_1d(np.asarray(active_dims, np.int_))
+
+        self._all_dims_active = np.atleast_1d(self.active_dims).astype(np.int_)
+
         assert self.active_dims.size == self.input_dim, "input_dim={} does not match len(active_dim)={}".format(self.input_dim, self._all_dims_active.size)
 
         self._sliced_X = 0
@@ -61,8 +60,37 @@ class Kern(Parameterized):
         from .psi_comp import PSICOMP_GH
         self.psicomp = PSICOMP_GH()
 
+    def _to_dict(self):
+        input_dict = {}
+        input_dict["input_dim"] = self.input_dim
+        if isinstance(self.active_dims, np.ndarray):
+            input_dict["active_dims"] = self.active_dims.tolist()
+        else:
+            input_dict["active_dims"] = self.active_dims
+        input_dict["name"] = self.name
+        input_dict["useGPU"] = self.useGPU
+        return input_dict
+
+    def to_dict(self):
+        raise NotImplementedError
+
+    @staticmethod
+    def from_dict(input_dict):
+        import copy
+        input_dict = copy.deepcopy(input_dict)
+        kernel_class = input_dict.pop('class')
+        input_dict["name"] = str(input_dict["name"])
+        import GPy
+        kernel_class = eval(kernel_class)
+        return kernel_class._from_dict(kernel_class, input_dict)
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        return kernel_class(**input_dict)
+
+
     def __setstate__(self, state):
-        self._all_dims_active = np.arange(0, max(state['active_dims'])+1)
+        self._all_dims_active = np.arange(0, max(state['active_dims']) + 1)
         super(Kern, self).__setstate__(state)
 
     @property
@@ -132,18 +160,18 @@ class Kern(Parameterized):
         raise NotImplementedError
     def gradients_X_X2(self, dL_dK, X, X2):
         return self.gradients_X(dL_dK, X, X2), self.gradients_X(dL_dK.T, X2, X)
-    def gradients_XX(self, dL_dK, X, X2):
+    def gradients_XX(self, dL_dK, X, X2, cov=True):
         """
         .. math::
 
             \\frac{\partial^2 L}{\partial X\partial X_2} = \\frac{\partial L}{\partial K}\\frac{\partial^2 K}{\partial X\partial X_2}
         """
-        raise(NotImplementedError, "This is the second derivative of K wrt X and X2, and not implemented for this kernel")
-    def gradients_XX_diag(self, dL_dKdiag, X):
+        raise NotImplementedError("This is the second derivative of K wrt X and X2, and not implemented for this kernel")
+    def gradients_XX_diag(self, dL_dKdiag, X, cov=True):
         """
         The diagonal of the second derivative w.r.t. X and X2
         """
-        raise(NotImplementedError, "This is the diagonal of the second derivative of K wrt X and X2, and not implemented for this kernel")
+        raise NotImplementedError("This is the diagonal of the second derivative of K wrt X and X2, and not implemented for this kernel")
     def gradients_X_diag(self, dL_dKdiag, X):
         """
         The diagonal of the derivative w.r.t. X
@@ -211,6 +239,12 @@ class Kern(Parameterized):
     def input_sensitivity(self, summarize=True):
         """
         Returns the sensitivity for each dimension of this kernel.
+
+        This is an arbitrary measurement based on the parameters
+        of the kernel per dimension and scaling in general.
+
+        Use this as relative measurement, not for absolute comparison between
+        kernels.
         """
         return np.zeros(self.input_dim)
 
@@ -292,19 +326,18 @@ class Kern(Parameterized):
         """
         assert isinstance(other, Kern), "only kernels can be multiplied to kernels..."
         from .prod import Prod
-        #kernels = []
-        #if isinstance(self, Prod): kernels.extend(self.parameters)
-        #else: kernels.append(self)
-        #if isinstance(other, Prod): kernels.extend(other.parameters)
-        #else: kernels.append(other)
+        # kernels = []
+        # if isinstance(self, Prod): kernels.extend(self.parameters)
+        # else: kernels.append(self)
+        # if isinstance(other, Prod): kernels.extend(other.parameters)
+        # else: kernels.append(other)
         return Prod([self, other], name)
 
     def _check_input_dim(self, X):
-        assert X.shape[1] == self.input_dim, "{} did not specify _all_dims_active and X has wrong shape: X_dim={}, whereas input_dim={}".format(self.name, X.shape[1], self.input_dim)
+        assert X.shape[1] == self.input_dim, "{} did not specify active_dims and X has wrong shape: X_dim={}, whereas input_dim={}".format(self.name, X.shape[1], self.input_dim)
 
     def _check_active_dims(self, X):
         assert X.shape[1] >= len(self._all_dims_active), "At least {} dimensional X needed, X.shape={!s}".format(len(self._all_dims_active), X.shape)
-
 
 class CombinationKernel(Kern):
     """
@@ -324,28 +357,41 @@ class CombinationKernel(Kern):
         """
         assert all([isinstance(k, Kern) for k in kernels])
         extra_dims = np.asarray(extra_dims, dtype=int)
-        
-        active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), np.array([], dtype=int))
-        
+
+        active_dims = reduce(np.union1d, (np.r_[x.active_dims] for x in kernels), extra_dims)
+
         input_dim = active_dims.size
-        if extra_dims is not None:
-            input_dim += extra_dims.size
 
         # initialize the kernel with the full input_dim
         super(CombinationKernel, self).__init__(input_dim, active_dims, name)
 
         effective_input_dim = reduce(max, (k._all_dims_active.max() for k in kernels)) + 1
         self._all_dims_active = np.array(np.concatenate((np.arange(effective_input_dim), extra_dims if extra_dims is not None else [])), dtype=int)
-        
+
         self.extra_dims = extra_dims
         self.link_parameters(*kernels)
+
+    def _to_dict(self):
+        input_dict = super(CombinationKernel, self)._to_dict()
+        input_dict["parts"]  = {}
+        for ii in range(len(self.parts)):
+            input_dict["parts"][ii] = self.parts[ii].to_dict()
+        return input_dict
+
+    @staticmethod
+    def _from_dict(kernel_class, input_dict):
+        parts = input_dict.pop('parts', None)
+        subkerns = []
+        for pp in parts:
+            subkerns.append(Kern.from_dict(parts[pp]))
+        return kernel_class(subkerns)
 
     @property
     def parts(self):
         return self.parameters
 
     def _set_all_dims_ative(self):
-        self._all_dims_active = np.atleast_1d(self.active_dims).astype(int)        
+        self._all_dims_active = np.atleast_1d(self.active_dims).astype(int)
 
     def input_sensitivity(self, summarize=True):
         """

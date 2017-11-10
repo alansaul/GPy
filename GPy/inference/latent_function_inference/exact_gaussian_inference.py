@@ -21,7 +21,12 @@ class ExactGaussianInference(LatentFunctionInference):
     def __init__(self):
         pass#self._YYTfactor_cache = caching.cache()
 
-    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, K=None, precision=None, Z_tilde=None):
+    def to_dict(self):
+        input_dict = super(ExactGaussianInference, self)._to_dict()
+        input_dict["class"] = "GPy.inference.latent_function_inference.exact_gaussian_inference.ExactGaussianInference"
+        return input_dict
+
+    def inference(self, kern, X, likelihood, Y, mean_function=None, Y_metadata=None, K=None, variance=None, Z_tilde=None):
         """
         Returns a Posterior class containing essential quantities of the posterior
         """
@@ -31,8 +36,8 @@ class ExactGaussianInference(LatentFunctionInference):
         else:
             m = mean_function.f(X)
 
-        if precision is None:
-            precision = likelihood.gaussian_variance(Y_metadata)
+        if variance is None:
+            variance = likelihood.gaussian_variance(Y_metadata)
 
         YYT_factor = Y-m
 
@@ -40,7 +45,7 @@ class ExactGaussianInference(LatentFunctionInference):
             K = kern.K(X)
 
         Ky = K.copy()
-        diag.add(Ky, precision+1e-8)
+        diag.add(Ky, variance+1e-8)
 
         Wi, LW, LWi, W_logdet = pdinv(Ky)
 

@@ -127,8 +127,6 @@ class MRD(BayesianGPLVMMiniBatch):
 
         self.unlink_parameter(self.likelihood)
         self.unlink_parameter(self.kern)
-        del self.kern
-        del self.likelihood
 
         self.num_data = Ylist[0].shape[0]
         if isinstance(batchsize, int):
@@ -156,7 +154,11 @@ class MRD(BayesianGPLVMMiniBatch):
             self.link_parameter(spgp, i+2)
             self.bgplvms.append(spgp)
 
-        self.posterior = None
+        b = self.bgplvms[0]
+        self.posterior = b.posterior
+        self.kern = b.kern
+        self.likelihood = b.likelihood
+
         self.logger.info("init done")
 
     def parameters_changed(self):
@@ -193,11 +195,11 @@ class MRD(BayesianGPLVMMiniBatch):
             fracs = [fracs]*len(Ylist)
         elif init in "PCA_single":
             X = np.zeros((Ylist[0].shape[0], self.input_dim))
-            fracs = []
+            fracs = np.empty((len(Ylist), self.input_dim))
             for qs, Y in zip(np.array_split(np.arange(self.input_dim), len(Ylist)), Ylist):
-                x,frcs = initialize_latent('PCA', len(qs), Y)
+                x, frcs = initialize_latent('PCA', len(qs), Y)
                 X[:, qs] = x
-                fracs.append(frcs)
+                fracs[:, qs] = frcs
         else: # init == 'random':
             X = np.random.randn(Ylist[0].shape[0], self.input_dim)
             fracs = X.var(0)
@@ -206,9 +208,7 @@ class MRD(BayesianGPLVMMiniBatch):
         X /= X.std()
         return X, fracs
 
-    def _init_Z(self, init="permute", X=None):
-        if X is None:
-            X = self.X
+    def _init_Z(self, init, X):
         if init in "permute":
             Z = np.random.permutation(X.copy())[:self.num_inducing]
         elif init in "random":

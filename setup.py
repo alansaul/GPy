@@ -57,7 +57,11 @@ def read_to_rst(fname):
     except ImportError:
         return read(fname)
 
-desc = read_to_rst('README.md')
+desc = """
+
+Please refer to the github homepage for detailed instructions on installation and usage.
+
+"""
 
 version_dummy = {}
 exec(read('GPy/__version__.py'), version_dummy)
@@ -94,6 +98,10 @@ ext_mods = [Extension(name='GPy.kern.src.stationary_cython',
             Extension(name='GPy.kern.src.coregionalize_cython',
                       sources=['GPy/kern/src/coregionalize_cython.c'],
                       include_dirs=[np.get_include(),'.'],
+                      extra_compile_args=compile_flags),
+            Extension(name='GPy.models.state_space_cython',
+                      sources=['GPy/models/state_space_cython.c'],
+                      include_dirs=[np.get_include(),'.'],
                       extra_compile_args=compile_flags)]
 
 setup(name = 'GPy',
@@ -101,9 +109,11 @@ setup(name = 'GPy',
       author = read_to_rst('AUTHORS.txt'),
       author_email = "gpy.authors@gmail.com",
       description = ("The Gaussian Process Toolbox"),
+      long_description = desc,
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
       url = "http://sheffieldml.github.com/GPy/",
+      download_url='https://github.com/SheffieldML/GPy/',
       ext_modules = ext_mods,
       packages = ["GPy",
                   "GPy.core",
@@ -139,8 +149,8 @@ setup(name = 'GPy',
       include_package_data = True,
       py_modules = ['GPy.__init__'],
       test_suite = 'GPy.testing',
-      long_description=desc,
-      install_requires=['numpy>=1.7', 'scipy>=0.16', 'six', 'paramz'],
+      setup_requires = ['numpy>=1.7'],
+      install_requires = ['numpy>=1.7', 'scipy>=0.16', 'six', 'paramz>=0.8.5'],
       extras_require = {'docs':['sphinx'],
                         'optional':['mpi4py',
                                     'ipython>=4.0.0',
@@ -159,9 +169,14 @@ setup(name = 'GPy',
                    'Operating System :: Microsoft :: Windows',
                    'Operating System :: POSIX :: Linux',
                    'Programming Language :: Python :: 2.7',
-                   'Programming Language :: Python :: 3.3',
-                   'Programming Language :: Python :: 3.4',
                    'Programming Language :: Python :: 3.5',
+                   'Programming Language :: Python :: 3.6',
+                   'Framework :: IPython',
+                   'Intended Audience :: Science/Research',
+                   'Intended Audience :: Developers',
+                   'Topic :: Software Development',
+                   'Topic :: Software Development :: Libraries :: Python Modules',
+                   
                    ]
       )
 
@@ -172,21 +187,26 @@ home = os.getenv('HOME') or os.getenv('USERPROFILE')
 user_file = os.path.join(home,'.config', 'GPy', 'user.cfg')
 
 print("")
-if not os.path.exists(user_file):
-    # Does an old config exist?
-    old_user_file = os.path.join(home,'.gpy_user.cfg')
-    if os.path.exists(old_user_file):
-        # Move it to new location:
-        print("GPy: Found old config file, moving to new location {}".format(user_file))
-        os.rename(old_user_file, user_file)
+try:
+    if not os.path.exists(user_file):
+        # Does an old config exist?
+        old_user_file = os.path.join(home,'.gpy_user.cfg')
+        if os.path.exists(old_user_file):
+            # Move it to new location:
+            print("GPy: Found old config file, moving to new location {}".format(user_file))
+            if not os.path.exists(os.path.dirname(user_file)):
+                os.makedirs(os.path.dirname(user_file))
+            os.rename(old_user_file, user_file)
+        else:
+            # No config file exists, save informative stub to user config folder:
+            print("GPy: Saving user configuration file to {}".format(user_file))
+            if not os.path.exists(os.path.dirname(user_file)):
+                os.makedirs(os.path.dirname(user_file))
+            with open(user_file, 'w') as f:
+                with open(local_file, 'r') as l:
+                    tmp = l.read()
+                    f.write(tmp)
     else:
-        # No config file exists, save informative stub to user config folder:
-        print("GPy: Saving user configuration file to {}".format(user_file))
-        if not os.path.exists(os.path.dirname(user_file)):
-            os.makedirs(os.path.dirname(user_file))
-        with open(user_file, 'w') as f:
-            with open(local_file, 'r') as l:
-                tmp = l.read()
-                f.write(tmp)
-else:
-    print("GPy: User configuration file at location {}".format(user_file))
+        print("GPy: User configuration file at location {}".format(user_file))
+except:
+    print("GPy: Could not write user configuration file {}".format(user_file))

@@ -12,7 +12,6 @@ except ImportError:
     import configparser
     config = configparser.ConfigParser()
     from configparser import NoOptionError
-    
 
 # This is the default configuration file that always needs to be present.
 default_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'defaults.cfg'))
@@ -22,8 +21,8 @@ default_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '
 local_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'installation.cfg'))
 
 # This specifies configurations specific to the user (it is found in the user home directory)
-home = os.getenv('HOME') or os.getenv('USERPROFILE')
-user_file = os.path.join(home,'.config','gpy', 'user.cfg')
+home = os.getenv('HOME') or os.getenv('USERPROFILE') or ''
+user_file = os.path.join(home,'.config','GPy', 'user.cfg')
 
 # Read in the given files.
 config.readfp(open(default_file))
