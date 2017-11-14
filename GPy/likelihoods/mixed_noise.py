@@ -28,15 +28,15 @@ class MixedNoise(Likelihood):
     .. Note:
         For mixed noise regression, Y_metadata dictionary contains a key 'output_index' which
         specifies which output observations belong to which likelihood in the likelihood list
- 
+
         i.e. if it is {'output_index' : np.arange(Y.shape[0])[:, None] }
- 
+
         this would be each output is assigned to a different likelihood in the likelihood list
- 
+
         or
- 
+
         {'output_index' : np.vstack([0*np.ones((Y.shape[0])/2, 1), 1*np.ones((Y.shape[0])/2, 1)])}
- 
+
         would be the first half of the data belong to one likelihood, the second half belong to another likelihood in the likelihood list
     """
     def __init__(self, likelihoods_list, name='mixed_noise'):

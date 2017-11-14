@@ -126,7 +126,7 @@ class Gaussian(Likelihood):
         """
         Check if the values of the observations correspond to the values
         assumed by the likelihood function.
- 
+
         For a standard Gaussian no modification needs to be made
 
         :param Y: Observed outputs
@@ -551,13 +551,13 @@ class HeteroscedasticGaussian(Gaussian):
         specifies which output observations share the same variance parameter,
 
         i.e. if it is {'output_index' : np.arange(Y.shape[0])[:, None] }
- 
+
         this would be each output has its own variance (the default),
- 
+
         or
- 
+
         {'output_index' : np.vstack([0*np.ones((Y.shape[0])/2, 1), 1*np.ones((Y.shape[0])/2, 1)])}
- 
+
         which would be the first half share one variance, the second half share another variance.
     """
     def __init__(self, Y_metadata, gp_link=None, variance=1., name='het_Gauss'):

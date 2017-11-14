@@ -10,7 +10,7 @@ from .. import kern
 class GPRegressionGrid(GpGrid):
     """
     Gaussian Process model for grid inputs using Kronecker products.
- 
+
     Based on the model in the following paper:
         Gilboa, Elad, Yunus Saatci, and John P. Cunningham. "Scaling multidimensional inference for structured Gaussian processes." IEEE transactions on pattern analysis and machine intelligence 37.2 (2015): 424-436.
 

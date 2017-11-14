@@ -122,7 +122,7 @@ class WarpedGP(GP):
         Prediction results depend on:
         - The value of the self.predict_in_warped_space flag
         - The median flag passed as argument
- 
+
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray (Nnew x self.input_dim)
         :param kern: The kernel to use for prediction (defaults to the model

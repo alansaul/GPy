@@ -31,7 +31,7 @@ class GpGrid(GP):
     """
     A GP model for Grid inputs.
 
-    Inference where the inputs are on a grid allows computational savings to be made. 
+    Inference where the inputs are on a grid allows computational savings to be made.
 
     Based on work of:
         Gilboa, E., Saatci, Y., & Cunningham, J. P. (2015). Scaling multidimensional inference for structured Gaussian processes. IEEE transactions on pattern analysis and machine intelligence, 37(2), 424-436.

@@ -43,7 +43,7 @@ class VariationalPrior(Parameterized):
 class NormalPrior(VariationalPrior):
     """
     Variational normal prior
- 
+
     .. math::
         p(\mathbf{X}) \sim N(\mathbf{0}, \mathbf{\eye})
 

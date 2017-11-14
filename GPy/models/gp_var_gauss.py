@@ -11,7 +11,7 @@ log_2_pi = np.log(2*np.pi)
 class GPVariationalGaussianApproximation(GP):
     """
     The Variational Gaussian Approximation revisited model.
- 
+
     This model provides one means by which non-Gaussian likelihoods can be used, through the use of a variational approximation.
 
     Based on:

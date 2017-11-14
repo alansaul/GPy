@@ -107,7 +107,7 @@ class Bernoulli(Likelihood):
 
         .. math::
             F = \int q(f_{i}|m_{i},v_{i})\log p(y_{i} | f_{i}) df_{i}
- 
+
         :param Y: Observed output data
         :type Y: np.ndarray (num_data x output_dim)
         :param m: means of Gaussian that expectation is over, q

@@ -14,7 +14,7 @@ from .link_functions import Log
 class LogLogistic(Likelihood):
     """
     Log-Logistic likelihood.
- 
+
     This likelihood is used when it is known that the log of the output observations, i.e. log Y, are Logistically distributed with some mean and variance.
 
     This likelihood supports censored observations (knowing that the value of Y is beyond a certain value) and is hence applicable to 'survival analysis'.

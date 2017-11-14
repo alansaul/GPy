@@ -12,7 +12,7 @@ from ..core.parameterization.param import Param
 class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
     """
     Bayesian Gaussian Process Latent Variable Model.
- 
+
     Unlike BayesianGPLVM this model has the additional ability of visiting output dimensions independently, and stochastically. One benefit is that this allows missing data to be handled in a theoretically sound manner, though with a hit to performance.
 
     Based on work of:

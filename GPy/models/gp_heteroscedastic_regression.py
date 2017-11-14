@@ -27,15 +27,15 @@ class GPHeteroscedasticRegression(GP):
     .. Note::
         For heteroscedastic regression Y_metadata dictionary contains a key 'output_index' which
         specifies which output observations share the same variance parameter,
- 
+
         i.e. if it is {'output_index' : np.arange(Y.shape[0])[:, None] }
- 
+
         this would be each output has its own variance (the default),
- 
+
         or
- 
+
         {'output_index' : np.vstack([1*np.ones((Y.shape[0])/2, 1), 2*np.ones((Y.shape[0])/2, 1)])}
- 
+
         which would be the first half share one variance, the second half share another variance.
     """
     def __init__(self, X, Y, kernel=None, Y_metadata=None):

@@ -105,7 +105,7 @@ class BayesianGPLVM(SparseGP_MPI):
     def set_X_gradients(self, X, X_grad):
         """
         Set the gradients of the posterior distribution of X in its specified form.
- 
+
         :param X: Posterior object (with mean and variance) to set gradient of
         :type X: :py:class:`~GPy.core.parameterization.variational.NormalPosterior`
         :param tuple X_grad: Posterior mean and variance gradients to change existing posterior mean and variance gradients to

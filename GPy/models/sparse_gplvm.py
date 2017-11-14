@@ -9,7 +9,7 @@ from ..core import Param
 class SparseGPLVM(SparseGPRegression):
     """
     Sparse Gaussian Process Latent Variable Model.
- 
+
     This is an identical model to the :py:class:`~GPy.models.sparse_gp_regression.SparseGPRegression` model, but where X's are simply optimised at the same time as the hyper-parameters. There is no input uncertainty around the X locations.
 
     :param Y: Observed data

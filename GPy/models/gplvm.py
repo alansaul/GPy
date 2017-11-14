@@ -11,7 +11,7 @@ from ..likelihoods import Gaussian
 class GPLVM(GP):
     """
     Gaussian Process Latent Variable Model.
- 
+
     Commonly used model for dimensionality reduction, and acts as a non-linear counterpart to PPCA, with a Gaussian process mapping between the latent dimensionality and the observed data, rather than a linear mapping.
 
     Based on work of:

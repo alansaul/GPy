@@ -48,7 +48,7 @@ class Mapping(Parameterized):
             \\frac{\partial L}{\partial F} = \\frac{\partial L}{\partial F}\\frac{\partial F}{\partial X}
 
         where F is the mapping
- 
+
         :param dL_dF: derivative of log maginal likelihood wrt the mapping
         :type dL_dF: np.ndarray | float
         :param X: input to linear function

@@ -368,7 +368,7 @@ class StateSpace(Model):
         return (MF, PF)
 
     def rts_smoother(self,F,L,Qc,X,MS,PS):
-        """ 
+        """
         Run the RTS smoother for a given model and data
         """
 

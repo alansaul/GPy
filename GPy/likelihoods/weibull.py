@@ -14,7 +14,7 @@ from .likelihood import Likelihood
 class Weibull(Likelihood):
     """
     Weibull likelihood.
- 
+
     This likelihood is used when it is known that the the output observations, i.e. log Y, are Weibull distributed
 
     This likelihood supports censored observations (knowing that the value of Y is beyond a certain value) and is hence applicable to 'survival analysis'.

@@ -32,7 +32,7 @@ class Likelihood(Parameterized):
        - update_gradients : Given the gradient of the model wrt the variance parameter, set the parameters gradient.
 
     To enable use with EP, it is desirable to define:
-   
+
        - moments_match_ep : a function to compute the EP moments
 
        - ep_gradients: a function to compute the gradients for EP with respect to any parameters the likelihood might have
@@ -58,7 +58,7 @@ class Likelihood(Parameterized):
     For exact Gaussian inference:
 
         - exact_inference_gradients: compute the gradients of the parameters of the likelihood given dL_dKdiag
- 
+
     For predictions, the following functions should be implemented:
 
         - predictive_mean: Expected value of Y^* given Y, i.e. E(Y^*|Y, X*) at new prediction points X*, given the mean and variance of the Gaussian process posterior
@@ -68,7 +68,7 @@ class Likelihood(Parameterized):
         - predictive_quantiles: Get the quantiles of y* at new predictive points.
 
         - conditional_mean : condtional mean of the random variable given a value for the gp, required for quadrature
- 
+
         - conditional_variance : condtional variance of the random variable given a value for the gp, required for quadrature
 
     If any of these functions are not implemented, or they result in numerically unstable results (exeptions are raised) these quantaties will be approximated by sampling. In order to do this the following method must be implemented:
