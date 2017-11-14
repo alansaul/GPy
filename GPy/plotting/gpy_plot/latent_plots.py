@@ -254,7 +254,8 @@ def plot_latent(self, labels=None, which_indices=None,
     :param plot_limits: the plot limits for the plot
     :type plot_limits: (xmin, xmax, ymin, ymax) or ((xmin, xmax), (ymin, ymax))
     :param bool updates: if possible, make interactive updates using the specific library you are using
-    :param :py:class:`~GPy.kern.Kern` kern: the kernel to use for prediction
+    :param kern: the kernel to use for prediction
+    :type kern: :py:class:`~GPy.kern.src.kern.Kern` | None
     :param str marker: markers to use - cycle if more labels then markers are given
     :param int num_samples: the number of samples to plot maximally. We do a stratified subsample from the labels, if the number of samples (in X) is higher then num_samples.
     :param imshow_kwargs: the kwargs for the imshow (magnification factor)
@@ -322,7 +323,8 @@ def plot_steepest_gradient_map(self, output_labels=None, data_labels=None, which
     :param plot_limits: the plot limits for the plot
     :type plot_limits: (xmin, xmax, ymin, ymax) or ((xmin, xmax), (ymin, ymax))
     :param bool updates: if possible, make interactive updates using the specific library you are using
-    :param :py:class:`~GPy.kern.Kern` kern: the kernel to use for prediction
+    :param kern: the kernel to use for prediction
+    :type kern: :py:class:`GPy.kern.src.kern.Kern` | None
     :param str marker: markers to use - cycle if more labels then markers are given
     :param int num_samples: the number of samples to plot maximally. We do a stratified subsample from the labels, if the number of samples (in X) is higher then num_samples.
     :param imshow_kwargs: the kwargs for the imshow (magnification factor)

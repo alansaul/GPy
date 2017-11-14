@@ -22,46 +22,49 @@ def flatten_if_needed(x):
     return numpy.atleast_1d(x).flatten()
 
 class GradientChecker(Model):
+    """
+    Model that provides a means to easily check gradients of functions. This is very useful when developing new models to ensure that the analytical gradients match the numerical gradients.
+
+    :param f: Function to check gradient for
+    :type f: func
+    :param df: Gradient of function to check
+    :type df: func
+    :param x0:
+        Initial guess for inputs x (if it has a shape (a,b) this will be reflected in the parameter names).
+        Can be a list of arrays, if takes a list of arrays. This list will be passed
+        to f and df in the same order as given here.
+        If only one argument, make sure not to pass a list!!!
+    :type x0: [array-like] | array-like | float | int
+    :param names:
+        Names to print, when performing gradcheck. If a list was passed to x0
+        a list of names with the same length is expected.
+    :param args: Arguments passed as f(x, *args, **kwargs) and df(x, *args, **kwargs)
+
+    Examples:
+    ---------
+        from GPy.models import GradientChecker
+        N, M, Q = 10, 5, 3
+
+        Sinusoid:
+
+            X = numpy.random.rand(N, Q)
+            grad = GradientChecker(numpy.sin,numpy.cos,X,'x')
+            grad.checkgrad(verbose=1)
+
+        Using GPy:
+
+            X, Z = numpy.random.randn(N,Q), numpy.random.randn(M,Q)
+            kern = GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True)
+            grad = GradientChecker(kern.K,
+                                   lambda x: 2*kern.dK_dX(numpy.ones((1,1)), x),
+                                   x0 = X.copy(),
+                                   names='X')
+            grad.checkgrad(verbose=1)
+            grad.randomize()
+            grad.checkgrad(verbose=1)
+    """
 
     def __init__(self, f, df, x0, names=None, *args, **kwargs):
-        """
-        :param f: Function to check gradient for
-        :param df: Gradient of function to check
-        :param x0:
-            Initial guess for inputs x (if it has a shape (a,b) this will be reflected in the parameter names).
-            Can be a list of arrays, if takes a list of arrays. This list will be passed
-            to f and df in the same order as given here.
-            If only one argument, make sure not to pass a list!!!
-
-        :type x0: [array-like] | array-like | float | int
-        :param names:
-            Names to print, when performing gradcheck. If a list was passed to x0
-            a list of names with the same length is expected.
-        :param args: Arguments passed as f(x, *args, **kwargs) and df(x, *args, **kwargs)
-
-        Examples:
-        ---------
-            from GPy.models import GradientChecker
-            N, M, Q = 10, 5, 3
-
-            Sinusoid:
-
-                X = numpy.random.rand(N, Q)
-                grad = GradientChecker(numpy.sin,numpy.cos,X,'x')
-                grad.checkgrad(verbose=1)
-
-            Using GPy:
-
-                X, Z = numpy.random.randn(N,Q), numpy.random.randn(M,Q)
-                kern = GPy.kern.linear(Q, ARD=True) + GPy.kern.rbf(Q, ARD=True)
-                grad = GradientChecker(kern.K,
-                                       lambda x: 2*kern.dK_dX(numpy.ones((1,1)), x),
-                                       x0 = X.copy(),
-                                       names='X')
-                grad.checkgrad(verbose=1)
-                grad.randomize()
-                grad.checkgrad(verbose=1)
-        """
         super(GradientChecker, self).__init__(name='GradientChecker')
         if isinstance(x0, (list, tuple)) and names is None:
             self.shapes = [get_shape(xi) for xi in x0]
@@ -116,25 +119,28 @@ class GradientChecker(Model):
 
 
 class HessianChecker(GradientChecker):
+    """
+    Similarly to GradientChecker, this model provides a means to easily check hessians of functions. This is very useful when developing new models to ensure that the analytical gradients match the numerical gradients.
+
+    :param f: Function to check hessian for (only used for numerical hessian gradient)
+    :type f: func
+    :param df: Gradient of function to check
+    :type df: func
+    :param ddf: Analytical gradient function
+    :type ddf: func
+    :param x0:
+        Initial guess for inputs x (if it has a shape (a,b) this will be reflected in the parameter names).
+        Can be a list of arrays, if takes a list of arrays. This list will be passed
+        to f and df in the same order as given here.
+        If only one argument, make sure not to pass a list!!!
+    :type x0: [array-like] | array-like | float | int
+    :param names:
+        Names to print, when performing gradcheck. If a list was passed to x0
+        a list of names with the same length is expected.
+    :param args: Arguments passed as f(x, *args, **kwargs) and df(x, *args, **kwargs)
+    """
 
     def __init__(self, f, df, ddf, x0, names=None, *args, **kwargs):
-        """
-        :param f: Function (only used for numerical hessian gradient)
-        :param df: Gradient of function to check
-        :param ddf: Analytical gradient function
-        :param x0:
-            Initial guess for inputs x (if it has a shape (a,b) this will be reflected in the parameter names).
-            Can be a list of arrays, if takes a list of arrays. This list will be passed
-            to f and df in the same order as given here.
-            If only one argument, make sure not to pass a list!!!
-
-        :type x0: [array-like] | array-like | float | int
-        :param names:
-            Names to print, when performing gradcheck. If a list was passed to x0
-            a list of names with the same length is expected.
-        :param args: Arguments passed as f(x, *args, **kwargs) and df(x, *args, **kwargs)
-
-        """
         super(HessianChecker, self).__init__(df, ddf, x0, names=names, *args, **kwargs)
         self._f = f
         self._df = df
@@ -195,7 +201,7 @@ class HessianChecker(GradientChecker):
 
     def checkgrad_block(self, analytic_hess, numeric_hess, verbose=False, step=1e-6, tolerance=1e-3, block_indices=None, plot=False):
         """
-        Checkgrad a block matrix
+        Checkgrad a block matrix, rarely needed
         """
         if analytic_hess.dtype is np.dtype('object'):
             #Make numeric hessian also into a block matrix
@@ -289,25 +295,26 @@ class HessianChecker(GradientChecker):
         return check_passed
 
 class SkewChecker(HessianChecker):
+    """
+    Similarly to GradientChecker, this model provides a means to easily check skew of functions. This is very useful when developing new models to ensure that the analytical gradients match the numerical gradients.
+
+    :param df: gradient of function
+    :param ddf: Gradient of function to check (hessian)
+    :param dddf: Analytical gradient function (third derivative)
+    :param x0:
+        Initial guess for inputs x (if it has a shape (a,b) this will be reflected in the parameter names).
+        Can be a list of arrays, if takes a list of arrays. This list will be passed
+        to f and df in the same order as given here.
+        If only one argument, make sure not to pass a list!!!
+
+    :type x0: [array-like] | array-like | float | int
+    :param names:
+        Names to print, when performing gradcheck. If a list was passed to x0
+        a list of names with the same length is expected.
+    :param args: Arguments passed as f(x, *args, **kwargs) and df(x, *args, **kwargs)
+    """
 
     def __init__(self, df, ddf, dddf, x0, names=None, *args, **kwargs):
-        """
-        :param df: gradient of function
-        :param ddf: Gradient of function to check (hessian)
-        :param dddf: Analytical gradient function (third derivative)
-        :param x0:
-            Initial guess for inputs x (if it has a shape (a,b) this will be reflected in the parameter names).
-            Can be a list of arrays, if takes a list of arrays. This list will be passed
-            to f and df in the same order as given here.
-            If only one argument, make sure not to pass a list!!!
-
-        :type x0: [array-like] | array-like | float | int
-        :param names:
-            Names to print, when performing gradcheck. If a list was passed to x0
-            a list of names with the same length is expected.
-        :param args: Arguments passed as f(x, *args, **kwargs) and df(x, *args, **kwargs)
-
-        """
         super(SkewChecker, self).__init__(df, ddf, dddf, x0, names=names, *args, **kwargs)
 
     def checkgrad(self, target_param=None, verbose=False, step=1e-6, tolerance=1e-3, block_indices=None, plot=False, super_plot=False):

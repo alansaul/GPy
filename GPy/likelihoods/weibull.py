@@ -13,10 +13,26 @@ from .likelihood import Likelihood
 
 class Weibull(Likelihood):
     """
-    Implementing Weibull likelihood function ...
+    Weibull likelihood.
+ 
+    This likelihood is used when it is known that the the output observations, i.e. log Y, are Weibull distributed
 
+    This likelihood supports censored observations (knowing that the value of Y is beyond a certain value) and is hence applicable to 'survival analysis'.
+
+    :param gp_link: transformation function, default is Identity (don't transform the function - the transformation of f to the postitive domain happens implicitly)
+    :type gp_link: :py:class:`~GPy.likelihoods.link_functions.GPTransformation`
+    :param beta: shape parameter
+    :type beta: float
+
+    .. Note::
+        Censoring is provided by the means of the Y_metadata dictionary, with the key 'censored'. If the values provided in Y contains censored obserations, Y_metadata should provide a np.ndarray of the same shape as Y, with values 0 if it was a non-censored observation, and values 1 if it was a censored observation (i.e if the observation is known to happen beyond the value provided in Y).
+
+        For example if Y_metadata contained:
+
+            {'censored' : np.vstack([np.zeros((Y.shape[0])/2, 1), np.ones((Y.shape[0])/2, 1)])}
+
+        The likelihood would know that the first half of observations were non-censored, and the second half were censored
     """
-
     def __init__(self, gp_link=None, beta=1.):
         if gp_link is None:
             #Parameterised not as link_f but as f
@@ -32,14 +48,14 @@ class Weibull(Likelihood):
         """
         Likelihood function given link(f)
 
-
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in weibull distribution
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metdata: dict
         :returns: likelihood evaluated for this point
-        :rtype: float
+        :rtype: np.ndarray(num_data x output_dim)
         """
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         c = np.zeros((link_f.shape[0],))
@@ -53,17 +69,14 @@ class Weibull(Likelihood):
         """
         Log Likelihood Function given link(f)
 
-        .. math::
-            \\ln p(y_{i}|\lambda(f_{i})) = \\alpha_{i}\\log \\beta - \\log \\Gamma(\\alpha_{i}) + (\\alpha_{i} - 1)\\log y_{i} - \\beta y_{i}\\\\
-            \\alpha_{i} = \\beta y_{i}
-
-        :param link_f: latent variables (link(f))
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in poisson distribution
-        :returns: likelihood evaluated for this point
-        :rtype: float
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metadata: dict
+        :returns: log likelihood evaluated for this point
+        :rtype: np.ndarray(num_data x output_dim)
 
         """
         # alpha = self.gp_link.transf(gp)*self.beta    sum(log(a) + (a-1).*log(y)- f - exp(-f).*y.^a)
@@ -83,20 +96,16 @@ class Weibull(Likelihood):
 
     def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
-        Gradient of the log likelihood function at y, given link(f) w.r.t link(f)
+        Gradient of the pdf at y, given link(f) w.r.t link(f)
 
-        .. math::
-            \\frac{d \\ln p(y_{i}|\\lambda(f_{i}))}{d\\lambda(f)} = \\beta (\\log \\beta y_{i}) - \\Psi(\\alpha_{i})\\beta\\\\
-            \\alpha_{i} = \\beta y_{i}
-
-        :param link_f: latent variables (f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in gamma distribution
-        :returns: gradient of likelihood evaluated at points
-        :rtype: Nx1 array
-
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metadata: dict
+        :returns: gradient of log likelihood evaluated at points link(f)
+        :rtype: np.ndarray(num_data x output_dim)
         """
         # grad =  (1. - self.beta) / (y - link_f)
         c = np.zeros_like(y)
@@ -116,17 +125,14 @@ class Weibull(Likelihood):
         i.e. second derivative logpdf at y given link(f_i) and link(f_j)  w.r.t link(f_i) and link(f_j)
         The hessian will be 0 unless i == j
 
-        .. math::
-            \\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}\\lambda(f)} = -\\beta^{2}\\frac{d\\Psi(\\alpha_{i})}{d\\alpha_{i}}\\\\
-            \\alpha_{i} = \\beta y_{i}
-
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in gamma distribution
-        :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
-        :rtype: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metadata: dict
+        :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points link(f))
+        :rtype: np.ndarray(num_data x output_dim)
 
         .. Note::
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
@@ -149,17 +155,14 @@ class Weibull(Likelihood):
         """
         Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
 
-        .. math::
-            \\frac{d^{3} \\ln p(y_{i}|\lambda(f_{i}))}{d^{3}\\lambda(f)} = -\\beta^{3}\\frac{d^{2}\\Psi(\\alpha_{i})}{d\\alpha_{i}}\\\\
-            \\alpha_{i} = \\beta y_{i}
-
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in gamma distribution
-        :returns: third derivative of likelihood evaluated at points f
-        :rtype: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metadata: dict
+        :returns: third derivative of log likelihood evaluated at points link(f)
+        :rtype: np.ndarray(num_data x output_dim)
         """
         # d3lik_dlink3 = (1. - self.beta) / (y - link_f)**3
 
@@ -175,23 +178,18 @@ class Weibull(Likelihood):
         # d3lik_dlink3 = (y ** self.r) * np.exp(-link_f)
         return d3lik_dlink3
 
-    def exact_inference_gradients(self, dL_dKdiag, Y_metadata=None):
-        return np.zeros(self.size)
-
     def dlogpdf_link_dr(self, inv_link_f, y, Y_metadata=None):
         """
+        Gradient of the log-likelihood function at y given link(f), w.r.t shape parameter (r)
 
-        Gradient of the log-likelihood function at y given f, w.r.t shape parameter
-
-        .. math::
-
-        :param inv_link_f: latent variables link(f)
-        :type inv_link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
         :param Y_metadata: includes censoring information in dictionary key 'censored'
-        :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
-        :rtype: float
+        :type Y_metadata: dict
+        :returns: derivative of log likelihood evaluated at points link(f) w.r.t shape parameter
+        :rtype: np.ndarray(num_data x output_dim)
         """
         c = np.zeros_like(y)
         link_f = inv_link_f
@@ -204,15 +202,16 @@ class Weibull(Likelihood):
 
     def dlogpdf_dlink_dr(self, inv_link_f, y, Y_metadata=None):
         """
-        First order derivative derivative of loglikelihood wrt r:shape parameter
+        Derivative of the dlogpdf_dlink w.r.t shape parameter (r)
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in gamma distribution
-        :returns: third derivative of likelihood evaluated at points f
-        :rtype: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metadata: dict
+        :returns: derivative of log likelihood evaluated at points link(f) w.r.t shape parameter
+        :rtype: np.ndarray(num_data x output_dim)
         """
         # dlogpdf_dlink_dr = self.beta * y**(self.beta - 1) * np.exp(-link_f)
         # dlogpdf_dlink_dr = np.exp(-link_f) * (y ** self.r) * np.log(y)
@@ -230,12 +229,16 @@ class Weibull(Likelihood):
 
     def d2logpdf_dlink2_dr(self, link_f, y, Y_metadata=None):
         """
+        Gradient of the hessian (d2logpdf_dlink2) w.r.t shape parameter (r)
 
-        Derivative of hessian of loglikelihood wrt r-shape parameter.
-        :param link_f:
-        :param y:
-        :param Y_metadata:
-        :return:
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metadata: dict
+        :returns: derivative of log hessian evaluated at points link(f_i) and link(f_j) w.r.t shape parameter
+        :rtype: np.ndarray(num_data x output_dim)
         """
 
         c = np.zeros_like(y)
@@ -252,11 +255,19 @@ class Weibull(Likelihood):
 
     def d3logpdf_dlink3_dr(self, link_f, y, Y_metadata=None):
         """
+        Gradient of the third derivative (d3logpdf_dlink3) w.r.t shape parameter (r)
 
-        :param link_f:
-        :param y:
-        :param Y_metadata:
-        :return:
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metadata: dict
+        :returns: derivative of log third derivative evaluated at points link(f_i) and link(f_j) w.r.t shape parameter
+        :rtype: np.ndarray(num_data x output_dim)
+
+        .. Note:
+            This is not necessary for the Laplace approximation
         """
         c = np.zeros_like(y)
         if Y_metadata is not None and 'censored' in Y_metadata.keys():
@@ -269,11 +280,16 @@ class Weibull(Likelihood):
 
     def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
         """
+        Wrapper to ensure we have gradients for every parameter (in this case the shape r)
 
-        :param f:
-        :param y:
-        :param Y_metadata:
-        :return:
+        :param f: latent variables f
+        :type f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metadata: dict
+        :returns: dL_dthetas
+        :rtype: np.ndarray (num_params x num_data x output_dim)
         """
         dlogpdf_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
         dlogpdf_dtheta[0, :, :] = self.dlogpdf_link_dr(f, y, Y_metadata=Y_metadata)
@@ -281,11 +297,16 @@ class Weibull(Likelihood):
 
     def dlogpdf_dlink_dtheta(self, f, y, Y_metadata=None):
         """
+        Wrapper to ensure we have gradients for every parameter (in this case the shape r)
 
-        :param f:
-        :param y:
-        :param Y_metadata:
-        :return:
+        :param f: latent variables f
+        :type f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metadata: dict
+        :returns: dL_dthetas
+        :rtype: np.ndarray (num_params x num_data x output_dim)
         """
         dlogpdf_dlink_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
         dlogpdf_dlink_dtheta[0, :, :] = self.dlogpdf_dlink_dr(f, y, Y_metadata)
@@ -293,11 +314,16 @@ class Weibull(Likelihood):
 
     def d2logpdf_dlink2_dtheta(self, f, y, Y_metadata=None):
         """
+        Wrapper to ensure we have gradients for every parameter (in this case the shape r)
 
-        :param f:
-        :param y:
-        :param Y_metadata:
-        :return:
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metadata: dict
+        :returns: dL_dthetas
+        :rtype: np.ndarray (num_params x num_data x output_dim)
         """
         d2logpdf_dlink_dtheta2 = np.zeros((self.size, f.shape[0], f.shape[1]))
         d2logpdf_dlink_dtheta2[0, :, :] = self.d2logpdf_dlink2_dr(f, y, Y_metadata)
@@ -305,16 +331,23 @@ class Weibull(Likelihood):
 
     def update_gradients(self, grads):
         """
-        Pull out the gradients, be careful as the order must match the order
-        in which the parameters are added
+        Given the gradient of the model wrt the shape parameter, set the parameters gradient.
+
+        :param grad: dL_dr
+        :type grad: float
         """
         self.r.gradient = grads[0]
 
     def samples(self, gp, Y_metadata=None):
         """
-        Returns a set of samples of observations conditioned on a given value of latent variable f.
+        Returns a set of samples of observations based on a given value of the latent variable.
 
-        :param gp: latent variable
+        :param gp: latent variable f, before it has been transformed (squashed)
+        :type gp: np.ndarray (num_pred_points x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored', in this case it is whether particular predicted points are censored or not
+        :type Y_metadata: dict
+        :returns: Samples from the likelihood using these values for the latent function
+        :rtype: np.ndarray (num_pred_points x output_dim)
         """
         orig_shape = gp.shape
         gp = gp.flatten()

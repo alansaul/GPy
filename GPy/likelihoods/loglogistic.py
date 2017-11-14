@@ -13,11 +13,31 @@ from .link_functions import Log
 
 class LogLogistic(Likelihood):
     """
+    Log-Logistic likelihood.
+ 
+    This likelihood is used when it is known that the log of the output observations, i.e. log Y, are Logistically distributed with some mean and variance.
+
+    This likelihood supports censored observations (knowing that the value of Y is beyond a certain value) and is hence applicable to 'survival analysis'.
+
     .. math::
-        $$ p(y_{i}|f_{i}, z_{i}) = \\prod_{i=1}^{n} (\\frac{ry^{r-1}}{\\exp{f(x_{i})}})^{1-z_i} (1 + (\\frac{y}{\\exp(f(x_{i}))})^{r})^{z_i-2}  $$
+        p(y_{i}|f_{i}, z_{i}) = \\prod_{i=1}^{n} (\\frac{ry^{r-1}}{\\exp{f(x_{i})}})^{1-z_i} (1 + (\\frac{y}{\\exp(f(x_{i}))})^{r})^{z_i-2}
 
     .. note:
         where z_{i} is the censoring indicator- 0 for non-censored data, and 1 for censored data.
+
+    :param gp_link: transformation function, default is Identity (don't transform the function - the transformation of f to the postitive domain happens implicitly)
+    :type gp_link: :py:class:`~GPy.likelihoods.link_functions.GPTransformation`
+    :param r: log shape parameter
+    :type r: float
+
+    .. Note::
+        Censoring is provided by the means of the Y_metadata dictionary, with the key 'censored'. If the values provided in Y contains censored obserations, Y_metadata should provide a np.ndarray of the same shape as Y, with values 0 if it was a non-censored observation, and values 1 if it was a censored observation (i.e if the observation is known to happen beyond the value provided in Y).
+
+        For example if Y_metadata contained:
+
+            {'censored' : np.vstack([np.zeros((Y.shape[0])/2, 1), np.ones((Y.shape[0])/2, 1)])}
+
+        The likelihood would know that the first half of observations were non-censored, and the second half were censored
     """
 
     def __init__(self, gp_link=None, r=1.0):
@@ -30,40 +50,33 @@ class LogLogistic(Likelihood):
         self.link_parameter(self.r)
         # self.censored = 'censored'
 
-
-
     def pdf_link(self, link_f, y, Y_metadata=None):
         """
         Likelihood function given link(f)
 
-        .. math::
-
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
         :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metdata: dict
         :returns: likelihood evaluated for this point
-        :rtype: float
+        :rtype: np.ndarray(num_data x output_dim)
         """
         return np.exp(self.logpdf_link(link_f, y, Y_metadata=Y_metadata))
 
-
     def logpdf_link(self, link_f, y, Y_metadata=None):
         """
-        Log Likelihood Function given link(f)
+        Log likelihood function given link(f)
 
-        .. math::
-
-
-        :param link_f: latent variables (link(f))
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
         :param Y_metadata: includes censoring information in dictionary key 'censored'
-        :returns: likelihood evaluated for this point
-        :rtype: float
-
+        :type Y_metadata: dict
+        :returns: log likelihood evaluated for this point
+        :rtype: np.ndarray(num_data x output_dim)
         """
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(link_f)
@@ -90,18 +103,16 @@ class LogLogistic(Likelihood):
 
     def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
         """
-        Gradient of the log likelihood function at y, given link(f) w.r.t link(f)
+        Gradient of the log pdf at y, given link(f) w.r.t link(f)
 
-        .. math::
-
-        :param link_f: latent variables (f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
         :param Y_metadata: includes censoring information in dictionary key 'censored'
-        :returns: gradient of likelihood evaluated at points
-        :rtype: Nx1 array
-
+        :type Y_metadata: dict
+        :returns: gradient of log likelihood evaluated at points link(f)
+        :rtype: np.ndarray(num_data x output_dim)
         """
         # c = Y_metadata['censored']
         # for debugging
@@ -128,16 +139,14 @@ class LogLogistic(Likelihood):
         i.e. second derivative logpdf at y given link(f_i) and link(f_j)  w.r.t link(f_i) and link(f_j)
         The hessian will be 0 unless i == j
 
-        .. math::
-
-
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
         :param Y_metadata: includes censoring information in dictionary key 'censored'
-        :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
-        :rtype: Nx1 array
+        :type Y_metadata: dict
+        :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points link(f))
+        :rtype: np.ndarray(num_data x output_dim)
 
         .. Note::
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
@@ -163,16 +172,14 @@ class LogLogistic(Likelihood):
         """
         Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
 
-        .. math::
-
-
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
         :param Y_metadata: includes censoring information in dictionary key 'censored'
-        :returns: third derivative of likelihood evaluated at points f
-        :rtype: Nx1 array
+        :type Y_metadata: dict
+        :returns: third derivative of log likelihood evaluated at points link(f)
+        :rtype: np.ndarray(num_data x output_dim)
         """
         # c = Y_metadata['censored']
         #  for debugging
@@ -195,17 +202,16 @@ class LogLogistic(Likelihood):
 
     def dlogpdf_link_dr(self, inv_link_f, y, Y_metadata=None):
         """
-        Gradient of the log-likelihood function at y given f, w.r.t shape parameter
+        Gradient of the log-likelihood function at y given link(f), w.r.t shape parameter (r)
 
-        .. math::
-
-        :param inv_link_f: latent variables link(f)
-        :type inv_link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
         :param Y_metadata: includes censoring information in dictionary key 'censored'
-        :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
-        :rtype: float
+        :type Y_metadata: dict
+        :returns: derivative of log likelihood evaluated at points link(f) w.r.t shape parameter
+        :rtype: np.ndarray(num_data x output_dim)
         """
         # c = Y_metadata['censored']
         # c = np.zeros((y.shape[0],))
@@ -227,17 +233,16 @@ class LogLogistic(Likelihood):
 
     def dlogpdf_dlink_dr(self, inv_link_f, y, Y_metadata=None):
         """
-        Derivative of the dlogpdf_dlink w.r.t shape parameter
+        Derivative of the dlogpdf_dlink w.r.t shape parameter (r)
 
-        .. math::
-
-        :param inv_link_f: latent variables inv_link_f
-        :type inv_link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
         :param Y_metadata: includes censoring information in dictionary key 'censored'
-        :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
-        :rtype: Nx1 array
+        :type Y_metadata: dict
+        :returns: derivative of log likelihood evaluated at points link(f) w.r.t shape parameter
+        :rtype: np.ndarray(num_data x output_dim)
         """
         # c = np.zeros((y.shape[0],))
         c = np.zeros_like(y)
@@ -258,17 +263,16 @@ class LogLogistic(Likelihood):
 
     def d2logpdf_dlink2_dr(self, inv_link_f, y, Y_metadata=None):
         """
-        Gradient of the hessian (d2logpdf_dlink2) w.r.t shape parameter
+        Gradient of the hessian (d2logpdf_dlink2) w.r.t shape parameter (r)
 
-        .. math::
-
-        :param inv_link_f: latent variables link(f)
-        :type inv_link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
         :param Y_metadata: includes censoring information in dictionary key 'censored'
-        :returns: derivative of hessian evaluated at points f and f_j w.r.t variance parameter
-        :rtype: Nx1 array
+        :type Y_metadata: dict
+        :returns: derivative of log hessian evaluated at points link(f_i) and link(f_j) w.r.t shape parameter
+        :rtype: np.ndarray(num_data x output_dim)
         """
         # c = Y_metadata['censored']
 
@@ -301,24 +305,62 @@ class LogLogistic(Likelihood):
         return d2logpdf_dlink2_dr
 
     def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
+        """
+        Wrapper to ensure we have gradients for every parameter (in this case the shape r)
+
+        :param f: latent variables f
+        :type f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metadata: dict
+        :returns: dL_dthetas
+        :rtype: np.ndarray (num_params x num_data x output_dim)
+        """
         dlogpdf_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
         dlogpdf_dtheta[0, :, :] = self.dlogpdf_link_dr(f, y, Y_metadata=Y_metadata)
         return dlogpdf_dtheta
 
     def dlogpdf_dlink_dtheta(self, f, y, Y_metadata=None):
+        """
+        Wrapper to ensure we have gradients for every parameter (in this case the shape r)
+
+        :param f: latent variables f
+        :type f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metadata: dict
+        :returns: dL_dthetas
+        :rtype: np.ndarray (num_params x num_data x output_dim)
+        """
         dlogpdf_dlink_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
         dlogpdf_dlink_dtheta[0, :, :] = self.dlogpdf_dlink_dr(f, y, Y_metadata=Y_metadata)
         return dlogpdf_dlink_dtheta
 
     def d2logpdf_dlink2_dtheta(self, f, y, Y_metadata=None):
+        """
+        Wrapper to ensure we have gradients for every parameter (in this case the shape r)
+
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored'
+        :type Y_metadata: dict
+        :returns: dL_dthetas
+        :rtype: np.ndarray (num_params x num_data x output_dim)
+        """
         d2logpdf_dlink2_dtheta = np.zeros((self.size, f.shape[0], f.shape[1]))
         d2logpdf_dlink2_dtheta[0,:, :] = self.d2logpdf_dlink2_dr(f, y, Y_metadata=Y_metadata)
         return d2logpdf_dlink2_dtheta
 
     def update_gradients(self, grads):
         """
-        Pull out the gradients, be careful as the order must match the order
-        in which the parameters are added
+        Given the gradient of the model wrt the shape parameter, set the parameters gradient.
+
+        :param grad: dL_dr
+        :type grad: float
         """
         self.r.gradient = grads[0]
 
@@ -326,7 +368,12 @@ class LogLogistic(Likelihood):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 
-        :param gp: latent variable
+        :param gp: latent variable f, before it has been transformed (squashed)
+        :type gp: np.ndarray (num_pred_points x output_dim)
+        :param Y_metadata: includes censoring information in dictionary key 'censored', in this case it is whether particular predicted points are censored or not
+        :type Y_metadata: dict
+        :returns: Samples from the likelihood using these values for the latent function
+        :rtype: np.ndarray (num_pred_points x output_dim)
         """
         orig_shape = gp.shape
         gp = gp.flatten()
@@ -336,4 +383,3 @@ class LogLogistic(Likelihood):
         Ysim = np.array([sp.stats.fisk.rvs(self.r, loc=0, scale=self.gp_link.transf(f)) for f in gp])
         #np.random.fisk(self.gp_link.transf(gp), c=self.r)
         return Ysim.reshape(orig_shape)
-

@@ -11,20 +11,52 @@ from ..core.parameterization.param import Param
 
 class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
     """
-    Bayesian Gaussian Process Latent Variable Model
+    Bayesian Gaussian Process Latent Variable Model.
+ 
+    Unlike BayesianGPLVM this model has the additional ability of visiting output dimensions independently, and stochastically. One benefit is that this allows missing data to be handled in a theoretically sound manner, though with a hit to performance.
 
-    :param Y: observed data (np.ndarray) or GPy.likelihood
-    :type Y: np.ndarray| GPy.likelihood instance
-    :param input_dim: latent dimensionality
-    :type input_dim: int
-    :param init: initialisation method for the latent space
+    Based on work of:
+        Titsias, Michalis K., and Neil D. Lawrence. "Bayesian Gaussian process latent variable model." International Conference on Artificial Intelligence and Statistics. 2010.
+
+    See the following for a more thorough derivation:
+        A. Damianou. (2015) "Deep Gaussian Processes and Variational Propagation of Uncertainty." PhD Thesis, The University of Sheffield.
+
+    :param Y: Observed data (np.ndarray)
+    :type Y: np.ndarray (num_data x output_dim)
+    :param int input_dim: Latent dimensionality
+    :param X: Latent space mean locations - if specified, initialisation such as PCA will be ignored.
+    :type X: np.ndarray (num_data x input_dim)
+    :param X_variance: The uncertainty in the measurements of X (assumed to be Gaussian variance) - if not specified sampled randomly
+    :type X_variance: np.ndarray (num_data x input_dim) | None
+    :param init: Initialisation method for the latent space
     :type init: 'PCA'|'random'
-
+    :param int num_inducing: Number of inducing points for sparse approximation (optional, default 10. Ignored if Z is not None)
+    :param Z: Inducing input locations - locations of inducing points for sparse approximation - randomly taken from latent means, X, if not specified
+    :type Z: np.ndarray (num_inducing x input_dim) | None
+    :param kernel: the kernel instance (covariance function). See link kernels. RBF used if not specified
+    :type kernel: :py:class:`~GPy.kern.src.kern.Kern` | None
+    :param inference_method: Inference method used. Variational inference method as in the original paper used if not specified.
+    :type inference_method: :py:class:`~GPy.inference.latent_function_inference.LatentFunctionInference` | None
+    :param likelihood: Likelihood instance for observed data, default is GPy.likelihood.Gaussian. An appropriate different inference method must be specified (and implemented) if Gaussian is not used.
+    :type likelihood: :py:class:`~GPy.likelihoods.likelihood.Likelihood` | None
+    :param str name: Naming given to model
+    :param normalizer:
+        normalize the outputs Y.
+        Prediction will be un-normalized using this normalizer.
+        If normalizer is None, we will normalize using Standardize.
+        If normalizer is False, no normalization will be done.
+    :type normalizer: True, False, :py:class:`~GPy.util.normalizer._Norm` object
+    :param bool missing_data: If missing data exists in the output (Y contains np.nan) missing data can be specified and these outputs will be marginalised out analytically. Default False
+    :param bool stochastic: Whether to visit output dimensions stochastically when computing gradients
+    :param int batchsize: If calculating gradient by stochastically choosing output dimensions, how many output dimensions should be used at a time to get an approximate gradient
+    :param Y_metadata: Dictionary containing auxillary information for Y, usually only needed when likelihood not iid Gaussian. Default None
+    :type Y_metadata: None | dict
     """
+
     def __init__(self, Y, input_dim, X=None, X_variance=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, inference_method=None, likelihood=None,
                  name='bayesian gplvm', normalizer=None,
-                 missing_data=False, stochastic=False, batchsize=1):
+                 missing_data=False, stochastic=False, batchsize=1, Y_metdata=None):
         self.logger = logging.getLogger(self.__class__.__name__)
         if X is None:
             from ..util.initialization import initialize_latent
@@ -68,7 +100,7 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
                                            name=name, inference_method=inference_method,
                                            normalizer=normalizer,
                                            missing_data=missing_data, stochastic=stochastic,
-                                           batchsize=batchsize)
+                                           batchsize=batchsize, Y_metdata=Y_metadata)
         self.X = X
         self.link_parameter(self.X, 0)
 
@@ -104,6 +136,14 @@ class BayesianGPLVMMiniBatch(SparseGPMiniBatch):
         return super(BayesianGPLVMMiniBatch, self)._outer_init_full_values()
 
     def parameters_changed(self):
+        """
+        Method that is called upon any changes to :py:class:`~GPy.parameterization.param.Param` variables within the model.
+        In particular in the BayesianGPLVM class this method re-performs inference, recalculating the posterior and log marginal likelihood and gradients of the model. It will loop through output dimensions accordingly if missing data is set.
+
+        .. warning::
+            This method is not designed to be called manually, the framework is set up to automatically call this method upon changes to parameters, if you call
+            this method yourself, there may be unexpected consequences.
+        """
         super(BayesianGPLVMMiniBatch,self).parameters_changed()
 
         kl_fctr = self.kl_factr

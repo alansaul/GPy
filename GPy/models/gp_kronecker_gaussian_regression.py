@@ -18,15 +18,20 @@ class GPKroneckerGaussianRegression(Model):
 
     The noise must be iid Gaussian.
 
-    See Stegle et al.
-    @inproceedings{stegle2011efficient,
-      title={Efficient inference in matrix-variate gaussian models with $\\backslash$ iid observation noise},
-      author={Stegle, Oliver and Lippert, Christoph and Mooij, Joris M and Lawrence, Neil D and Borgwardt, Karsten M},
-      booktitle={Advances in Neural Information Processing Systems},
-      pages={630--638},
-      year={2011}
-    }
+    Based on:
+        Stegle, Oliver, et al. "Efficient inference in matrix-variate gaussian models with\iid observation noise." Advances in neural information processing systems. 2011.
 
+    :param X1: Input observations on one space
+    :type X1: np.ndarray (N1 x input_dim_1)
+    :param X2: Input observations on another space
+    :type X1: np.ndarray (N2 x input_dim_2)
+    :param Y: Observed output data
+    :type Y: np.ndarray ((N1 + N2) x output_dim)
+    :param kern1: a GPy kernel for input space X1
+    :type kern1: :py:class:`~GPy.kern.src.kern.Kern`
+    :param kern2: a GPy kernel for input space X2
+    :type kern2: :py:class:`~GPy.kern.src.kern.Kern`
+    :param float noise_var: Noise variance for Gaussian likelihood
     """
     def __init__(self, X1, X2, Y, kern1, kern2, noise_var=1., name='KGPR'):
         Model.__init__(self, name=name)
@@ -51,6 +56,11 @@ class GPKroneckerGaussianRegression(Model):
         assert Y.shape == (self.num_data1, self.num_data2)
 
     def log_likelihood(self):
+        """
+        Log marginal likelihood
+
+        :rtype: float
+        """
         return self._log_marginal_likelihood
 
     def parameters_changed(self):
@@ -105,7 +115,8 @@ class GPKroneckerGaussianRegression(Model):
         :type X1new: np.ndarray, Nnew x self.input_dim1
         :param X2new: The points at which to make a prediction
         :type X2new: np.ndarray, Nnew x self.input_dim2
-
+        :returns: mean and variance predictions at new points X1new and X2new
+        :rtype: tuple(np.ndarray, np.ndarray)
         """
         k1xf = self.kern1.K(X1new, self.X1)
         k2xf = self.kern2.K(X2new, self.X2)

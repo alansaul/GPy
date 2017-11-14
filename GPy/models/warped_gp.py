@@ -12,8 +12,24 @@ from GPy import kern
 
 class WarpedGP(GP):
     """
-    This defines a GP Regression model that applies a 
-    warping function to the output.
+    This defines a GP Regression model that applies a warping function to the output.
+
+    :param X: Input observations
+    :type X: np.ndarray (num_data x input_dim)
+    :param Y: Observed output data
+    :type Y: np.ndarray (num_data x output_dim)
+    :param kernel: a GPy kernel, defaults to rbf
+    :type kernel: :py:class:`~GPy.kern.src.kern.Kern` instance | None
+    :param warping_function: ?
+    :type warping_function: ?
+    :param warping_terms: ?
+    :type warping_terms: int
+    :param normalizer:
+        normalize the outputs Y.
+        Prediction will be un-normalized using this normalizer.
+        If normalizer is None, we will normalize using Standardize.
+        If normalizer is False, no normalization will be done.
+    :type normalizer: True, False, :py:class:`~GPy.util.normalizer._Norm` object
     """
     def __init__(self, X, Y, kernel=None, warping_function=None, warping_terms=3, normalizer=False):
         if kernel is None:
@@ -31,6 +47,14 @@ class WarpedGP(GP):
         self.link_parameter(self.warping_function)
 
     def set_XY(self, X=None, Y=None):
+        """
+        Set the input and output observations to new values
+
+        :param X: new X values
+        :type X: np.ndarray (num_data x input_dim)
+        :param Y: new Y values
+        :type Y: np.ndarray (num_data x output_dim)
+        """
         super(WarpedGP, self).set_XY(X, Y)
         self.Y_untransformed = self.Y_normalized.copy()
         self.update_model(True)
@@ -45,6 +69,9 @@ class WarpedGP(GP):
         self.warping_function.update_grads(self.Y_untransformed, Kiy)
 
     def transform_data(self):
+        """
+        Transform the untransformed Y using the warping function
+        """
         Y = self.warping_function.f(self.Y_untransformed.copy()).copy()
         return Y
 
@@ -57,6 +84,9 @@ class WarpedGP(GP):
         return ll + np.log(jacobian).sum()
 
     def plot_warping(self):
+        """
+        Plot the warping function between the minimum and maximum untransformed Y (i.e. it's whole range)
+        """
         self.warping_function.plot(self.Y_untransformed.min(), self.Y_untransformed.max())
 
     def _get_warped_term(self, mean, std, gh_samples, pred_init=None):
@@ -92,7 +122,21 @@ class WarpedGP(GP):
         Prediction results depend on:
         - The value of the self.predict_in_warped_space flag
         - The median flag passed as argument
-        The likelihood keyword is never used, it is just to follow the plotting API.
+ 
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray (Nnew x self.input_dim)
+        :param kern: The kernel to use for prediction (defaults to the model
+                     kern). this is useful for examining e.g. subprocesses.
+        :type kern: :py:class:`~GPy.kern.src.kern.Kern` | None
+        :param pred_init: ?
+        :type pred_init: ?
+        :param Y_metadata: Dict of metadata about the predicting point (Y*) to pass to the likelihood
+        :type Y_metadata: None | dict
+        :param median: ?
+        :type median: bool
+        :param int deg_gauss_hermite: degree of Gauss hermite quadrature
+        :param likelihood: The likelihood keyword is never used, it is just to follow the plotting API.
+        :type likelihood: None
         """
         #mu, var = GP._raw_predict(self, Xnew)
         # now push through likelihood

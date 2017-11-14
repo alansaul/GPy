@@ -15,22 +15,6 @@ class GPMultioutRegression(SparseGP):
     """
     Gaussian Process model for scalable multioutput regression
 
-    This is a thin wrapper around the models.GP class, with a set of sensible defaults
-
-    :param X_list: list of input observations corresponding to each output
-    :type X_list: list of numpy arrays
-    :param Y_list: list of observed values related to the different noise models
-    :type Y_list: list of numpy arrays
-    :param kernel: a GPy kernel ** Coregionalized, defaults to RBF ** Coregionalized
-    :type kernel: None | GPy.kernel defaults
-    :likelihoods_list: a list of likelihoods, defaults to list of Gaussian likelihoods
-    :type likelihoods_list: None | a list GPy.likelihoods
-    :param name: model name
-    :type name: string
-    :param W_rank: number tuples of the corregionalization parameters 'W' (see coregionalize kernel documentation)
-    :type W_rank: integer
-    :param kernel_name: name of the kernel
-    :type kernel_name: string
     """
     def __init__(self, X, Y, Xr_dim, kernel=None, kernel_row=None, likelihood=None, Z=None, Z_row=None, X_row=None, Xvariance_row=None, num_inducing=(10,10), qU_var_r_W_dim=None, qU_var_c_W_dim=None, init='GP', name='GPMR'):
 

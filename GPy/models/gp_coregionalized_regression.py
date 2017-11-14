@@ -18,18 +18,14 @@ class GPCoregionalizedRegression(GP):
     :param Y_list: list of observed values related to the different noise models
     :type Y_list: list of numpy arrays
     :param kernel: a GPy kernel ** Coregionalized, defaults to RBF ** Coregionalized
-    :type kernel: None | GPy.kernel defaults
+    :type kernel: None | :py:class:`~GPy.kern.src.kern.Kern` defaults
     :likelihoods_list: a list of likelihoods, defaults to list of Gaussian likelihoods
-    :type likelihoods_list: None | a list GPy.likelihoods
-    :param name: model name
-    :type name: string
-    :param W_rank: number tuples of the corregionalization parameters 'W' (see coregionalize kernel documentation)
-    :type W_rank: integer
-    :param kernel_name: name of the kernel
-    :type kernel_name: string
+    :type likelihoods_list: list(:py:class:`GPy.likelihoods.likelihood.Likelihood`) | None
+    :param str name: model name
+    :param int W_rank: number tuples of the corregionalization parameters 'W' (see coregionalize kernel documentation)
+    :param str kernel_name: name of the kernel
     """
     def __init__(self, X_list, Y_list, kernel=None, likelihoods_list=None, name='GPCR',W_rank=1,kernel_name='coreg'):
-
         #Input and Output
         X,Y,self.output_index = util.multioutput.build_XY(X_list,Y_list)
         Ny = len(Y_list)

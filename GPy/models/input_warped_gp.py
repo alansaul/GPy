@@ -10,16 +10,19 @@ from .. import kern
 
 
 class InputWarpedGP(GP):
-    """Input Warped GP
+    """
+    Input Warped GP
 
     This defines a GP model that applies a warping function to the Input.
     By default, it uses Kumar Warping (CDF of Kumaraswamy distribution)
 
     Parameters
     ----------
-    X : array_like, shape = (n_samples, n_features) for input data
+    X : array_like
+        shape = (n_samples, n_features) for input data
 
-    Y : array_like, shape = (n_samples, 1) for output data
+    Y : array_like
+        shape = (n_samples, 1) for output data
 
     kernel : object, optional
         An instance of kernel function defined in GPy.kern

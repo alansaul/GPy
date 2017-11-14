@@ -7,21 +7,28 @@ from ..core import Param
 
 class MLPext(Mapping):
     """
-    Mapping based on a multi-layer perceptron neural network model, with multiple hidden layers. Activation function
-    is applied to all hidden layers. The output is a linear combination of the last layer features, i.e. the
-    last layer is linear.
+    Mapping based on a multi-layer perceptron neural network model, with multiple hidden layers. Activation function is applied to all hidden layers. The output is a linear combination of the last layer features, i.e. the last layer is linear.
+
+    .. math::
+
+       F(\mathbf{X}) = \\tanh( ... (\\tanh(\\tanh(\mathbf{X}\mathbf{W}_{1} + \mathbf{b}_{1})\mathbf{W}_{2} + \mathbf{b}_{2})) ...)
+
+    :param input_dim: dimension of input.
+    :type input_dim: int
+    :param output_dim: dimension of output.
+    :type output_dim: int
+    :param hidden_dim: list of number of hidden 'neurons' for each hidden layer
+    :type hidden_dim: list(int)
+    :param prior: variance of Gaussian prior on all variables. If None, no prior is used (default: None)
+    :type prior: float
+    :param activation: choose activation function. Allowed values are 'tanh' and 'sigmoid'
+    :type activation: 'tanh' | 'sigmoid' | 'relu'
+    :param name: name of mlp mapping instance
+    :type name: str
     """
 
     def __init__(self, input_dim=1, output_dim=1, hidden_dims=[3], prior=None, activation='tanh', name='mlpmap'):
 
-        """
-        :param input_dim: number of input dimensions
-        :param output_dim: number of output dimensions
-        :param hidden_dims: list of hidden sizes of hidden layers
-        :param prior: variance of Gaussian prior on all variables. If None, no prior is used (default: None)
-        :param activation: choose activation function. Allowed values are 'tanh' and 'sigmoid'
-        :param name:
-        """
         super(MLPext, self).__init__(input_dim=input_dim, output_dim=output_dim, name=name)
         assert activation in ['tanh', 'sigmoid', 'relu'], NotImplementedError('Only tanh, relu and sigmoid activations'
                                                                               'are implemented')
@@ -57,6 +64,12 @@ class MLPext(Mapping):
             self.grad_act = lambda x: 1. * (x > 0)
 
     def f(self, X):
+        """
+        The function is the evaluation of the MLP using the current weights and offsets
+
+        :param X: input to mapping function
+        :type X: np.ndarray | float
+        """
         net = X
         for W, b, i in zip(self.W_list, self.b_list, np.arange(len(self.W_list))):
             net = np.dot(net, W)
@@ -69,6 +82,7 @@ class MLPext(Mapping):
     def _f_preactivations(self, X):
         """Computes the network preactivations, i.e. the results of all intermediate linear layers before applying the
         activation function on them
+        :type X: np.ndarray | float
         :param X: input data
         :return: list of preactivations [X, XW+b, f(XW+b)W+b, ...]
         """
@@ -86,6 +100,14 @@ class MLPext(Mapping):
         return preactivations_list
 
     def update_gradients(self, dL_dF, X):
+        """
+        Update gradients of the mapping (back-propagation) to learn mapping weights and offsets of neurons
+
+        :param dL_dF: derivative of log maginal likelihood wrt the mapping
+        :type dL_dF: np.ndarray | float
+        :param X: input to additive function
+        :type X: np.ndarray | float
+        """
         preactivations_list = self._f_preactivations(X)
         d_dact = dL_dF
         d_dlayer = d_dact
@@ -119,6 +141,22 @@ class MLPext(Mapping):
             b.unfix()
 
     def gradients_X(self, dL_dF, X):
+        """
+        Calculate the gradient contributions to dL_dX arising from the mapping.
+
+        .. math::
+
+            \\frac{\partial L}{\partial F} = \\frac{\partial L}{\partial F}\\frac{\partial F}{\partial X}
+
+        where F is the mapping
+ 
+        :param dL_dF: derivative of log maginal likelihood wrt the mapping
+        :type dL_dF: np.ndarray | float
+        :param X: input to mlp function
+        :type X: np.ndarray | float
+        :returns: gradient contribution to X
+        :rtype: np.ndarray
+        """
         preactivations_list = self._f_preactivations(X)
         d_dact = dL_dF
         d_dlayer = d_dact

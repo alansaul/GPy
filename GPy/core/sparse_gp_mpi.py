@@ -17,21 +17,31 @@ class SparseGP_MPI(SparseGP):
     (Gaussian likelihoods) as well as non-conjugate sparse methods based on
     these.
 
-    :param X: inputs
+    :param X: input observations
     :type X: np.ndarray (num_data x input_dim)
-    :param likelihood: a likelihood instance, containing the observed data
-    :type likelihood: GPy.likelihood.(Gaussian | EP | Laplace)
-    :param kernel: the kernel (covariance function). See link kernels
-    :type kernel: a GPy.kern.kern instance
-    :param X_variance: The uncertainty in the measurements of X (Gaussian variance)
-    :type X_variance: np.ndarray (num_data x input_dim) | None
+    :param Y: output observations
+    :type Y: np.ndarray (num_data x output_dim)
     :param Z: inducing inputs
     :type Z: np.ndarray (num_inducing x input_dim)
-    :param num_inducing: Number of inducing points (optional, default 10. Ignored if Z is not None)
-    :type num_inducing: int
+    :param kernel: a GPy kernel
+    :type kernel: :py:class:`~GPy.kern.src.kern.Kern` instance
+    :param likelihood: a GPy likelihood
+    :type likelihood: :py:class:`~GPy.likelihoods.likelihood.Likelihood` instance
+    :param variational_prior: ?
+    :type variational_prior: ?
+    :param inference_method: The inference method to use, if not supplied, and a Gaussian likelihood is assumed,, variational DTC will be used
+    :type inference_method: :py:class:`~GPy.inference.latent_function_inference.LatentFunctionInference` | None
+    :param str name: Naming given to model
+    :param Y_metadata: Dictionary containing auxillary information for Y, usually only needed when likelihood is non-Gaussian. Default None
+    :type Y_metadata: None | dict
     :param mpi_comm: The communication group of MPI, e.g. mpi4py.MPI.COMM_WORLD
     :type mpi_comm: mpi4py.MPI.Intracomm
-
+    :param normalizer:
+        normalize the outputs Y.
+        Prediction will be un-normalized using this normalizer.
+        If normalizer is None, we will normalize using Standardize.
+        If normalizer is False, no normalization will be done.
+    :type normalizer: True, False, :py:class:`~GPy.util.normalizer._Norm` object
     """
 
     def __init__(self, X, Y, Z, kernel, likelihood, variational_prior=None, inference_method=None, name='sparse gp', Y_metadata=None, mpi_comm=None, normalizer=False):
@@ -79,6 +89,9 @@ class SparseGP_MPI(SparseGP):
 
     @SparseGP.optimizer_array.setter
     def optimizer_array(self, p):
+        """
+        Set the optimiser array values to new chosen values
+        """
         if self.mpi_comm != None:
             if self._IN_OPTIMIZATION_ and self.mpi_comm.rank==0:
                 self.mpi_comm.Bcast(np.int32(1),root=0)
@@ -86,6 +99,21 @@ class SparseGP_MPI(SparseGP):
         SparseGP.optimizer_array.fset(self,p)
 
     def optimize(self, optimizer=None, start=None, **kwargs):
+        """
+        Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors. If MPI is used this will broadcast the optimisation across all cores used.
+        kwargs are passed to the optimizer. They can be:
+
+        :param optimizer: which optimizer to use (defaults to self.preferred optimizer), a range of optimisers can be found in :module:`~GPy.inference.optimization`, they include 'scg', 'lbfgs', 'tnc'.
+        :type optimizer: string
+        :param start:
+        :type start:
+        :param messages: whether to display during optimisation
+        :type messages: bool
+        :param max_iters: maximum number of function evaluations
+        :type max_iters: int
+        :param bool ipython_notebook: whether to use ipython notebook widgets or not.
+        :param bool clear_after_finish: if in ipython notebook, we can clear the widgets after optimization.
+        """
         self._IN_OPTIMIZATION_ = True
         if self.mpi_comm==None:
             ret = super(SparseGP_MPI, self).optimize(optimizer,start,**kwargs)
@@ -114,6 +142,14 @@ class SparseGP_MPI(SparseGP):
         return ret
 
     def parameters_changed(self):
+        """
+        Method that is called upon any changes to :py:class:`~GPy.core.parameterization.param.Param` variables within the model.
+        In particular in the GP class this method re-performs inference, recalculating the posterior and log marginal likelihood and gradients of the model
+
+        .. warning::
+            This method is not designed to be called manually, the framework is set up to automatically call this method upon changes to parameters, if you call
+            this method yourself, there may be unexpected consequences.
+        """
         if isinstance(self.inference_method,VarDTC_minibatch):
             update_gradients(self, mpi_comm=self.mpi_comm)
         else:

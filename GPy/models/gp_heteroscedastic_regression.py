@@ -13,11 +13,30 @@ class GPHeteroscedasticRegression(GP):
 
     This is a thin wrapper around the models.GP class, with a set of sensible defaults
 
-    :param X: input observations
-    :param Y: observed values
-    :param kernel: a GPy kernel, defaults to rbf
+    :param X: Input observations
+    :type X: np.ndarray (num_data x input_dim)
+    :param Y: Observed output data
+    :type Y: np.ndarray (num_data x output_dim)
+    :param kernel: a GPy kernel instance, defaults to rbf
+    :type kernel: :py:class:`~GPy.kern.src.kern.Kern` instance | None
+    :param Y_metadata: Dictionary containing auxillary information for Y. See note
+    :type Y_metadata: None | dict
 
-    NB: This model does not make inference on the noise outside the training set
+    .. Note:: This model does not make inference on the noise outside the training set
+
+    .. Note::
+        For heteroscedastic regression Y_metadata dictionary contains a key 'output_index' which
+        specifies which output observations share the same variance parameter,
+ 
+        i.e. if it is {'output_index' : np.arange(Y.shape[0])[:, None] }
+ 
+        this would be each output has its own variance (the default),
+ 
+        or
+ 
+        {'output_index' : np.vstack([1*np.ones((Y.shape[0])/2, 1), 2*np.ones((Y.shape[0])/2, 1)])}
+ 
+        which would be the first half share one variance, the second half share another variance.
     """
     def __init__(self, X, Y, kernel=None, Y_metadata=None):
 
@@ -35,4 +54,3 @@ class GPHeteroscedasticRegression(GP):
         likelihood = likelihoods.HeteroscedasticGaussian(Y_metadata)
 
         super(GPHeteroscedasticRegression, self).__init__(X,Y,kernel,likelihood, Y_metadata=Y_metadata)
-

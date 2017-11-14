@@ -1,7 +1,6 @@
 # Copyright (c) 2012 - 2014, GPy authors (see AUTHORS.txt).
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 
-
 import numpy as np
 from scipy.special import gammaln, digamma
 from ...util.linalg import pdinv
@@ -11,6 +10,9 @@ import weakref
 
 
 class Prior(object):
+    """
+    Base class for priors that are to be assigned to Priorizable objects, usually parameters.
+    """
     domain = None
     _instance = None
     def __new__(cls, *args, **kwargs):
@@ -23,9 +25,44 @@ class Prior(object):
                 return cls._instance
 
     def pdf(self, x):
+        """
+        Evaluate the prior :math:`p(x|\\theta)` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return np.exp(self.lnpdf(x))
 
+    def lnpdf(self, x):
+        """
+        Evaluate the log prior :math:`\\ln p(x|\\theta)` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
+        raise NotImplementedError
+
+    def lnpdf_grad(self, x):
+        """
+        Evaluate the gradient of the log prior :math:`\\frac{d\\ln p(x|\\theta)}{d\\theta}` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
+        raise NotImplementedError
+
+    def rvs(self, n):
+        """
+        Sample a set of random variables from the distribution
+
+        :param int n: number of samples to take
+        """
+        raise NotImplementedError
+
     def plot(self):
+        """
+        Plot the distribution of the prior with its current hyperparameters.
+        """
         import sys
 
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
@@ -39,10 +76,10 @@ class Prior(object):
 
 class Gaussian(Prior):
     """
-    Implementation of the univariate Gaussian probability function, coupled with random variables.
+    Implementation of the univariate Gaussian prior distribution, with given hyperparameters.
 
-    :param mu: mean
-    :param sigma: standard deviation
+    :param float mu: mean of prior, default 0
+    :param float sigma: standard deviation of prior, default 1
 
     .. Note:: Bishop 2006 notation is used throughout the code
 
@@ -74,12 +111,29 @@ class Gaussian(Prior):
         return "N({:.2g}, {:.2g})".format(self.mu, self.sigma)
 
     def lnpdf(self, x):
+        """
+        Evaluate the prior :math:`p(x|\\theta)` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return self.constant - 0.5 * np.square(x - self.mu) / self.sigma2
 
     def lnpdf_grad(self, x):
+        """
+        Evaluate the gradient of the log prior :math:`\\frac{d\\ln p(x|\\theta)}{d\\theta}` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return -(x - self.mu) / self.sigma2
 
     def rvs(self, n):
+        """
+        Sample a set of random variables from the distribution
+
+        :param int n: number of samples to take
+        """
         return np.random.randn(n) * self.sigma + self.mu
 
 #     def __getstate__(self):
@@ -92,6 +146,13 @@ class Gaussian(Prior):
 #         self.constant = -0.5 * np.log(2 * np.pi * self.sigma2)
 
 class Uniform(Prior):
+    """
+    Implementation of the Uniform prior distribution, with given hyperparameters.
+
+    :param float lower: lower value of the uniform distribution. Default 0.0
+    :param float upper: upper value of the uniform distribution. Default 1.0
+
+    """
     _instances = []
 
     def __new__(cls, lower=0, upper=1):  # Singleton:
@@ -123,13 +184,30 @@ class Uniform(Prior):
         return "[{:.2g}, {:.2g}]".format(self.lower, self.upper)
 
     def lnpdf(self, x):
+        """
+        Evaluate the log prior :math:`\\ln p(x|\\theta)` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         region = (x >= self.lower) * (x <= self.upper)
         return region
 
     def lnpdf_grad(self, x):
+        """
+        Evaluate the gradient of the log prior :math:`\\frac{d\\ln p(x|\\theta)}{d\\theta}` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return np.zeros(x.shape)
 
     def rvs(self, n):
+        """
+        Sample a set of random variables from the distribution
+
+        :param int n: number of samples to take
+        """
         return np.random.uniform(self.lower, self.upper, size=n)
 
 #     def __getstate__(self):
@@ -141,7 +219,7 @@ class Uniform(Prior):
 
 class LogGaussian(Gaussian):
     """
-    Implementation of the univariate *log*-Gaussian probability function, coupled with random variables.
+    Implementation of the univariate log-Gaussian prior distribution, with given hyperparameters.
 
     :param mu: mean
     :param sigma: standard deviation
@@ -176,21 +254,40 @@ class LogGaussian(Gaussian):
         return "lnN({:.2g}, {:.2g})".format(self.mu, self.sigma)
 
     def lnpdf(self, x):
+        """
+        Evaluate the log prior :math:`\\ln p(x|\\theta)` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return self.constant - 0.5 * np.square(np.log(x) - self.mu) / self.sigma2 - np.log(x)
 
     def lnpdf_grad(self, x):
+        """
+        Evaluate the gradient of the log prior :math:`\\frac{d\\ln p(x|\\theta)}{d\\theta}` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return -((np.log(x) - self.mu) / self.sigma2 + 1.) / x
 
     def rvs(self, n):
+        """
+        Sample a set of random variables from the distribution
+
+        :param int n: number of samples to take
+        """
         return np.exp(np.random.randn(int(n)) * self.sigma + self.mu)
 
 
 class MultivariateGaussian(Prior):
     """
-    Implementation of the multivariate Gaussian probability function, coupled with random variables.
+    Implementation of the multivariate Gaussian prior distribution, with given hyperparameters.
 
-    :param mu: mean (N-dimensional array)
+    :param mu: mean vector
+    :type mu: np.ndarray (num_parameter_dims,)
     :param var: covariance matrix (NxN)
+    :type var: np.ndarray (num_parameter_dims x num_parameter_dims)
 
     .. Note:: Bishop 2006 notation is used throughout the code
 
@@ -221,21 +318,38 @@ class MultivariateGaussian(Prior):
     def summary(self):
         raise NotImplementedError
 
-    def pdf(self, x):
-        return np.exp(self.lnpdf(x))
-
     def lnpdf(self, x):
+        """
+        Evaluate the log prior :math:`\\ln p(x|\\theta)` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         d = x - self.mu
         return self.constant - 0.5 * np.sum(d * np.dot(d, self.inv), 1)
 
     def lnpdf_grad(self, x):
+        """
+        Evaluate the gradient of the log prior :math:`\\frac{d\\ln p(x|\\theta)}{d\\theta}` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         d = x - self.mu
         return -np.dot(self.inv, d)
 
     def rvs(self, n):
+        """
+        Sample a set of random variables from the distribution
+
+        :param int n: number of samples to take
+        """
         return np.random.multivariate_normal(self.mu, self.var, n)
 
     def plot(self):
+        """
+        Plot the multivariate distribution of the prior with its current hyperparameters.
+        """
         import sys
 
         assert "matplotlib" in sys.modules, "matplotlib package has not been imported."
@@ -263,10 +377,10 @@ def gamma_from_EV(E, V):
 
 class Gamma(Prior):
     """
-    Implementation of the Gamma probability function, coupled with random variables.
+    Implementation of the Gamma prior distribution, with given hyperparameters.
 
-    :param a: shape parameter
-    :param b: rate parameter (warning: it's the *inverse* of the scale)
+    :param float a: shape parameter
+    :param float b: rate parameter (warning: it's the *inverse* of the scale)
 
     .. Note:: Bishop 2006 notation is used throughout the code
 
@@ -297,6 +411,9 @@ class Gamma(Prior):
         return "Ga({:.2g}, {:.2g})".format(self.a, self.b)
 
     def summary(self):
+        """
+        Return a dictionary with various summary statistics of the distribution
+        """
         ret = {"E[x]": self.a / self.b, \
                "E[ln x]": digamma(self.a) - np.log(self.b), \
                "var[x]": self.a / self.b / self.b, \
@@ -308,12 +425,29 @@ class Gamma(Prior):
         return ret
 
     def lnpdf(self, x):
+        """
+        Evaluate the log prior :math:`\\ln p(x|\\theta)` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return self.constant + (self.a - 1) * np.log(x) - self.b * x
 
     def lnpdf_grad(self, x):
+        """
+        Evaluate the gradient of the log prior :math:`\\frac{d\\ln p(x|\\theta)}{d\\theta}` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return (self.a - 1.) / x - self.b
 
     def rvs(self, n):
+        """
+        Sample a set of random variables from the distribution
+
+        :param int n: number of samples to take
+        """
         return np.random.gamma(scale=1. / self.b, shape=self.a, size=n)
 
     @staticmethod
@@ -322,8 +456,8 @@ class Gamma(Prior):
         Creates an instance of a Gamma Prior  by specifying the Expected value(s)
         and Variance(s) of the distribution.
 
-        :param E: expected value
-        :param V: variance
+        :param float E: expected value
+        :param float V: variance
         """
         a = np.square(E) / V
         b = E / V
@@ -339,10 +473,10 @@ class Gamma(Prior):
 
 class InverseGamma(Gamma):
     """
-    Implementation of the inverse-Gamma probability function, coupled with random variables.
+    Implementation of the Inverse-Gamma prior distribution, with given hyperparameters.
 
-    :param a: shape parameter
-    :param b: rate parameter (warning: it's the *inverse* of the scale)
+    :param float a: shape parameter
+    :param float b: rate parameter (warning: it's the *inverse* of the scale)
 
     .. Note:: Bishop 2006 notation is used throughout the code
 
@@ -368,12 +502,29 @@ class InverseGamma(Gamma):
         return "iGa({:.2g}, {:.2g})".format(self.a, self.b)
 
     def lnpdf(self, x):
+        """
+        Evaluate the log prior :math:`\\ln p(x|\\theta)` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return self.constant - (self.a + 1) * np.log(x) - self.b / x
 
     def lnpdf_grad(self, x):
+        """
+        Evaluate the gradient of the log prior :math:`\\frac{d\\ln p(x|\\theta)}{d\\theta}` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return -(self.a + 1.) / x + self.b / x ** 2
 
     def rvs(self, n):
+        """
+        Sample a set of random variables from the distribution
+
+        :param int n: number of samples to take
+        """
         return 1. / np.random.gamma(scale=1. / self.b, shape=self.a, size=n)
 
 
@@ -383,8 +534,8 @@ class DGPLVM_KFDA(Prior):
     Kernel Fisher Discriminant Analysis by Seung-Jean Kim for implementing Face paper
     by Chaochao Lu.
 
-    :param lambdaa: constant
-    :param sigma2: constant
+    :param float lambdaa: constant
+    :param float sigma2: constant
 
     .. Note:: Surpassing Human-Level Face paper dgplvm implementation
 
@@ -402,7 +553,6 @@ class DGPLVM_KFDA(Prior):
     #     return cls._instances[-1]()
 
     def __init__(self, lambdaa, sigma2, lbl, kern, x_shape):
-        """A description for init"""
         self.datanum = lbl.shape[0]
         self.classnum = lbl.shape[1]
         self.lambdaa = lambdaa
@@ -528,7 +678,7 @@ class DGPLVM(Prior):
     """
     Implementation of the Discriminative Gaussian Process Latent Variable model paper, by Raquel.
 
-    :param sigma2: constant
+    :param float sigma2: constant
 
     .. Note:: DGPLVM for Classification paper implementation
 
@@ -1214,10 +1364,10 @@ class DGPLVM_T(Prior):
 
 class HalfT(Prior):
     """
-    Implementation of the half student t probability function, coupled with random variables.
+    Implementation of the Half Student-T prior distribution, with given hyperparameters.
 
-    :param A: scale parameter
-    :param nu: degrees of freedom
+    :param float A: scale parameter
+    :param float nu: degrees of freedom
 
     """
     domain = _POSITIVE
@@ -1242,6 +1392,12 @@ class HalfT(Prior):
         return "hT({:.2g}, {:.2g})".format(self.A, self.nu)
 
     def lnpdf(self, theta):
+        """
+        Evaluate the log prior :math:`\\ln p(x|\\theta)` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return (theta > 0) * (self.constant - .5*(self.nu + 1) * np.log(1. + (1./self.nu) * (theta/self.A)**2))
 
         # theta = theta if isinstance(theta,np.ndarray) else np.array([theta])
@@ -1259,6 +1415,12 @@ class HalfT(Prior):
         # return lnpdfs
 
     def lnpdf_grad(self, theta):
+        """
+        Evaluate the gradient of the log prior :math:`\\frac{d\\ln p(x|\\theta)}{d\\theta}` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         theta = theta if isinstance(theta, np.ndarray) else np.array([theta])
         grad = np.zeros_like(theta)
         above_zero = theta > 1e-6
@@ -1268,6 +1430,11 @@ class HalfT(Prior):
         return grad
 
     def rvs(self, n):
+        """
+        Sample a set of random variables from the distribution
+
+        :param int n: number of samples to take
+        """
         # return np.random.randn(n) * self.sigma + self.mu
         from scipy.stats import t
         # [np.abs(x) for x in t.rvs(df=4,loc=0,scale=50, size=10000)])
@@ -1278,11 +1445,9 @@ class HalfT(Prior):
 
 class Exponential(Prior):
     """
-    Implementation of the Exponential probability function,
-    coupled with random variables.
+    Implementation of the Exponential prior distribution, with given hyperparameters.
 
-    :param l: shape parameter
-
+    :param float l: shape parameter
     """
     domain = _POSITIVE
     _instances = []
@@ -1304,6 +1469,9 @@ class Exponential(Prior):
         return "Exp({:.2g})".format(self.l)
 
     def summary(self):
+        """
+        Return a dictionary with various summary statistics of the distribution
+        """
         ret = {"E[x]": 1. / self.l,
                "E[ln x]": np.nan,
                "var[x]": 1. / self.l**2,
@@ -1312,21 +1480,38 @@ class Exponential(Prior):
         return ret
 
     def lnpdf(self, x):
+        """
+        Evaluate the log prior :math:`\\ln p(x|\\theta)` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return np.log(self.l) - self.l * x
 
     def lnpdf_grad(self, x):
+        """
+        Evaluate the gradient of the log prior :math:`\\frac{d\\ln p(x|\\theta)}{d\\theta}` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return - self.l
 
     def rvs(self, n):
+        """
+        Sample a set of random variables from the distribution
+
+        :param int n: number of samples to take
+        """
         return np.random.exponential(scale=self.l, size=n)
 
 class StudentT(Prior):
     """
-    Implementation of the student t probability function, coupled with random variables.
+    Implementation of the Student-T prior distribution, with given hyperparameters.
 
-    :param mu: mean
-    :param sigma: standard deviation
-    :param nu: degrees of freedom
+    :param float mu: mean
+    :param float sigma: standard deviation
+    :param float nu: degrees of freedom
 
     .. Note:: Bishop 2006 notation is used throughout the code
 
@@ -1358,13 +1543,30 @@ class StudentT(Prior):
         return "St({:.2g}, {:.2g}, {:.2g})".format(self.mu, self.sigma, self.nu)
 
     def lnpdf(self, x):
+        """
+        Evaluate the log prior :math:`\\ln p(x|\\theta)` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         from scipy.stats import t
         return t.logpdf(x,self.nu,self.mu,self.sigma)
 
     def lnpdf_grad(self, x):
+        """
+        Evaluate the gradient of the log prior :math:`\\frac{d\\ln p(x|\\theta)}{d\\theta}` for a given x
+
+        :param x: 'random variable' to evaluate prior for
+        :type x: np.ndarray | float
+        """
         return -(self.nu + 1.)*(x - self.mu)/( self.nu*self.sigma2 + np.square(x - self.mu) )
 
     def rvs(self, n):
+        """
+        Sample a set of random variables from the distribution
+
+        :param int n: number of samples to take
+        """
         from scipy.stats import t
         ret = t.rvs(self.nu, loc=self.mu, scale=self.sigma, size=n)
         return ret    

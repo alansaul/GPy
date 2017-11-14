@@ -10,77 +10,86 @@ from .likelihood import Likelihood
 
 class Exponential(Likelihood):
     """
-    Expoential likelihood
-    Y is expected to take values in {0,1,2,...}
+    Exponential likelihood
+
     -----
-    $$
-    L(x) = \exp(\lambda) * \lambda**Y_i / Y_i!
-    $$
+    .. math::
+        p(y_{i}|\\lambda(f_{i})) = \\lambda(f_{i})\\exp (-y_{i}\\lambda(f_{i}))
+
+    :param gp_link: transformation function to maintain positivness (default log link function, i.e. exp(f) = rate)
+    :type gp_link: :py:class:`~GPy.likelihoods.link_functions.GPTransformation`
+
+    .. Note:: Y is expected to take values in {0,1,2,...}
+
+    .. See also::
+        likelihood.py, for the parent class
+
     """
     def __init__(self,gp_link=None):
         if gp_link is None:
             gp_link = link_functions.Log()
         super(Exponential, self).__init__(gp_link, 'ExpLikelihood')
 
-    def pdf_link(self, link_f, y, Y_metadata=None):
+    def pdf_link(self, inv_link_f, y, Y_metadata=None):
         """
         Likelihood function given link(f)
 
         .. math::
-            p(y_{i}|\\lambda(f_{i})) = \\lambda(f_{i})\\exp (-y\\lambda(f_{i}))
+            p(y_{i}|\\lambda(f_{i})) = \\lambda(f_{i})\\exp (-y_{i}\\lambda(f_{i}))
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in exponential distribution
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not typically needed for Exponential likelihood
+        :type Y_metadata: dict
         :returns: likelihood evaluated for this point
-        :rtype: float
+        :rtype: np.ndarray (num_data x output_dim)
         """
-        assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
-        log_objective = link_f*np.exp(-y*link_f)
+        assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
+        log_objective = inv_link_f*np.exp(-y*inv_link_f)
         return np.exp(np.sum(np.log(log_objective)))
 
-    def logpdf_link(self, link_f, y, Y_metadata=None):
+    def logpdf_link(self, inv_link_f, y, Y_metadata=None):
         """
         Log Likelihood Function given link(f)
 
         .. math::
             \\ln p(y_{i}|\lambda(f_{i})) = \\ln \\lambda(f_{i}) - y_{i}\\lambda(f_{i})
 
-        :param link_f: latent variables (link(f))
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in exponential distribution
-        :returns: likelihood evaluated for this point
-        :rtype: float
-
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not typically needed for Exponential likelihood
+        :type Y_metadata: dict
+        :returns: log likelihood evaluated for this point
+        :rtype: np.ndarray (num_data x output_dim)
         """
-        log_objective = np.log(link_f) - y*link_f
+        log_objective = np.log(inv_link_f) - y*inv_link_f
         return log_objective
 
-    def dlogpdf_dlink(self, link_f, y, Y_metadata=None):
+    def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
         """
         Gradient of the log likelihood function at y, given link(f) w.r.t link(f)
 
         .. math::
             \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\lambda(f)} = \\frac{1}{\\lambda(f)} - y_{i}
 
-        :param link_f: latent variables (f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in exponential distribution
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not typically needed for Exponential likelihood
+        :type Y_metadata: dict
         :returns: gradient of likelihood evaluated at points
-        :rtype: Nx1 array
-
+        :rtype: np.ndarray (num_data x output_dim)
         """
-        grad = 1./link_f - y
+        grad = 1./inv_link_f - y
         #grad = y/(link_f**2) - 1./link_f
         return grad
 
-    def d2logpdf_dlink2(self, link_f, y, Y_metadata=None):
+    def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
         """
         Hessian at y, given link(f), w.r.t link(f)
         i.e. second derivative logpdf at y given link(f_i) and link(f_j)  w.r.t link(f_i) and link(f_j)
@@ -89,38 +98,40 @@ class Exponential(Likelihood):
         .. math::
             \\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}\\lambda(f)} = -\\frac{1}{\\lambda(f_{i})^{2}}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in exponential distribution
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not typically needed for Exponential likelihood
+        :type Y_metadata: dict
         :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
-        :rtype: Nx1 array
+        :rtype: np.ndarray (num_data x output_dim)
 
         .. Note::
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
             (the distribution for y_i depends only on link(f_i) not on link(f_(j!=i))
         """
-        hess = -1./(link_f**2)
+        hess = -1./(inv_link_f**2)
         #hess = -2*y/(link_f**3) + 1/(link_f**2)
         return hess
 
-    def d3logpdf_dlink3(self, link_f, y, Y_metadata=None):
+    def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
         """
         Third order derivative log-likelihood function at y given link(f) w.r.t link(f)
 
         .. math::
             \\frac{d^{3} \\ln p(y_{i}|\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{2}{\\lambda(f_{i})^{3}}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in exponential distribution
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not typically needed for Exponential likelihood
+        :type Y_metadata: dict
         :returns: third derivative of likelihood evaluated at points f
-        :rtype: Nx1 array
+        :rtype: np.ndarray (num_data x output_dim)
         """
-        d3lik_dlink3 = 2./(link_f**3)
+        d3lik_dlink3 = 2./(inv_link_f**3)
         #d3lik_dlink3 = 6*y/(link_f**4) - 2./(link_f**3)
         return d3lik_dlink3
 
@@ -128,9 +139,33 @@ class Exponential(Likelihood):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 
-        :param gp: latent variable
+        :param gp: latent variable f, before it has been transformed (squashed)
+        :type gp: np.ndarray (num_pred_points x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not typically needed for Exponential likelihood
+        :type Y_metadata: dict
+        :returns: Samples from the likelihood using these values for the latent function
+        :rtype: np.ndarray (num_pred_points x output_dim)
         """
         orig_shape = gp.shape
         gp = gp.flatten()
         Ysim = np.random.exponential(1.0/self.gp_link.transf(gp))
         return Ysim.reshape(orig_shape)
+
+    def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
+        """
+        Get gradients for likelihood parameters.
+
+        Exponential currently has no parameters to have gradients for.
+        """
+        pass
+
+    def to_dict(self):
+        """
+        Make a dictionary of all the important features of the likelihood in order to recreate it at a later date.
+
+        :returns: Dictionary of likelihood
+        :rtype: dict
+        """
+        input_dict = super(Exponential, self)._to_dict()
+        input_dict["class"] = "GPy.likelihoods.Exponential"
+        return input_dict

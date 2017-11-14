@@ -469,7 +469,7 @@ class IBPLFM(SparseGP_MPI):
     Indian Buffet Process for Latent Force Models
 
     :param Y: observed data (np.ndarray) or GPy.likelihood
-    :type Y: np.ndarray| GPy.likelihood instance
+    :type Y: np.ndarray | GPy.likelihood instance
     :param X: input data (np.ndarray) [X:values, X:index], index refers to the number of the output
     :type X: np.ndarray
     :param input_dim: latent dimensionality

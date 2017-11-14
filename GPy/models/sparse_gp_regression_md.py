@@ -12,6 +12,34 @@ from GPy.core.parameterization.variational import NormalPosterior
 class SparseGPRegressionMD(SparseGP_MPI):
     """
     Sparse Gaussian Process Regression with Missing Data
+
+    :param X: Input observations
+    :type X: np.ndarray (num_data x input_dim)
+    :param Y: Observed output data
+    :type Y: np.ndarray (num_data x output_dim)
+    :param indexD: ?
+    :type indexD: ?
+    :param kernel: a GPy kernel, defaults to rbf+white
+    :type kernel: :py:class:`~GPy.kern.src.kern.Kern` instance | None
+    :param Z: inducing inputs (optional, see note)
+    :type Z: np.ndarray (num_inducing x input_dim) | None
+    :param num_inducing: number of inducing points (ignored if Z is passed, see note)
+    :type num_inducing: int
+    :param X_variance: The uncertainty in the measurements of X (Gaussian variance) (optional)
+    :type X_variance: np.ndarray (num_data x input_dim) | None
+    :param normalizer:
+        normalize the outputs Y.
+        Prediction will be un-normalized using this normalizer.
+        If normalizer is None, we will normalize using Standardize.
+        If normalizer is False, no normalization will be done.
+    :type normalizer: True, False, :py:class:`~GPy.util.normalizer._Norm` object
+    :param mpi_comm: The communication group of MPI, e.g. mpi4py.MPI.COMM_WORLD. If None MPI is not used
+    :type mpi_comm: :py:class:`mpi4py.MPI.Intracomm` | None
+    :param individual_Y_noise: ?
+    :type individual_Y_noise: ?
+    :param name: Naming given to model
+    :type name: str
+
     """
 
     def __init__(self, X, Y, indexD, kernel=None, Z=None, num_inducing=10, X_variance=None, normalizer=None, mpi_comm=None, individual_Y_noise=False, name='sparse_gp'):

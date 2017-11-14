@@ -20,16 +20,27 @@ class GP(Model):
     General purpose Gaussian process model
 
     :param X: input observations
+    :type X: np.ndarray (num_data x input_dim)
     :param Y: output observations
-    :param kernel: a GPy kernel, defaults to rbf+white
+    :type Y: np.ndarray (num_data x output_dim)
+    :param kernel: a GPy kernel
+    :type kernel: :py:class:`~GPy.kern.src.kern.Kern` instance
     :param likelihood: a GPy likelihood
-    :param inference_method: The :class:`~GPy.inference.latent_function_inference.LatentFunctionInference` inference method to use for this GP
-    :rtype: model object
-    :param Norm normalizer:
+    :type likelihood: :py:class:`~GPy.likelihoods.likelihood.Likelihood` instance
+    :param mean_function: Mean function to be used for the Gaussian process prior, defaults to zero mean
+    :type mean_function: :py:class:`~GPy.core.mapping.Mapping` | None
+    :param inference_method: Inference method to be used to compute the log marginal likelihood for this GP and its gradients.
+    :type inference_method: :py:class:`~GPy.inference.latent_function_inference.LatentFunctionInference`
+    :param name: name given to the :py:class:`GP` instance being initialised
+    :param Y_metadata: Dictionary containing auxillary information for Y, not usually needed for offset regression if iid Gaussian likelihood used. Default None
+    :type Y_metadata: None | dict
+    :param normalizer:
         normalize the outputs Y.
         Prediction will be un-normalized using this normalizer.
         If normalizer is None, we will normalize using Standardize.
         If normalizer is False, no normalization will be done.
+    :type normalizer: True, False, :py:class:`~GPy.util.normalizer._Norm` object
+    :rtype: model object
 
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
@@ -110,6 +121,14 @@ class GP(Model):
         self.posterior = None
 
     def to_dict(self, save_data=True):
+        """
+        Make a dictionary of all the important features of the model in order to recreate it at a later date.
+
+        :param save_data: Whether to save the input and output observations, X and Y respectively, to the dict.
+        :type save_data: bool
+        :returns: Dictionary of model
+        :rtype: dict
+        """
         input_dict = super(GP, self)._to_dict()
         input_dict["class"] = "GPy.core.GP"
         if not save_data:
@@ -138,6 +157,16 @@ class GP(Model):
 
     @staticmethod
     def _from_dict(input_dict, data=None):
+        """
+        Make a :py:class:`GP` instance from a dictionary containing all the information (usually saved previously with to_dict). Will fail if no data is provided and it is also not in the dictionary.
+
+        :param input_dict: Input dictionary to recreate the model, usually saved previously from to_dict
+        :type input_dict: dict
+        :param data: list containing input and output observations, X and Y repsectively.
+        :type data: tuple of X and Y data to be used
+        :returns: New :py:class:`GP` instance
+        :rtype: :py:class:`GP`
+        """
         import GPy
         import numpy as np
         if (input_dict['X'] is None) or (input_dict['Y'] is None):
@@ -169,22 +198,33 @@ class GP(Model):
         return GP(**input_dict)
 
     def save_model(self, output_filename, compress=True, save_data=True):
-        self._save_model(output_filename, compress=True, save_data=True)
+        """
+        Save the current model to a output file
 
-    # The predictive variable to be used to predict using the posterior object's
-    # woodbury_vector and woodbury_inv is defined as predictive_variable
-    # as long as the posterior has the right woodbury entries.
-    # It is the input variable used for the covariance between
-    # X_star and the posterior of the GP.
-    # This is usually just a link to self.X (full GP) or self.Z (sparse GP).
-    # Make sure to name this variable and the predict functions will "just work"
-    # In maths the predictive variable is:
-    #         K_{xx} - K_{xp}W_{pp}^{-1}K_{px}
-    #         W_{pp} := \texttt{Woodbury inv}
-    #         p := _predictive_variable
+        :param output_filename: String with filename and path
+        :type output_filename: str
+        :param compress: Whether to compress the output file to reduce filesize
+        :type compress: bool
+        :param save_data: Whether to save the input and output observations, X and Y respectively, to the dict.
+        :type save_data: bool
+        """
+        self._save_model(output_filename, compress=True, save_data=True)
 
     @property
     def _predictive_variable(self):
+        """
+        The predictive variable to be used to predict using the posterior object's
+        woodbury_vector and woodbury_inv is defined as predictive_variable
+        as long as the posterior has the right woodbury entries.
+        It is the input variable used for the covariance between
+        X_star and the posterior of the GP.
+        This is usually just a link to self.X (full GP) or self.Z (sparse GP).
+        Make sure to name this variable and the predict functions will "just work"
+        In maths the predictive variable is:
+                K_{xx} - K_{xp}W_{pp}^{-1}K_{px}
+                W_{pp} := \texttt{Woodbury inv}
+                p := _predictive_variable
+        """
         return self.X
 
     def set_XY(self, X=None, Y=None):
@@ -238,14 +278,14 @@ class GP(Model):
         """
         Set the output data of the model
 
-        :param X: output observations
-        :type X: np.ndarray
+        :param Y: output observations
+        :type Y: np.ndarray
         """
         self.set_XY(Y=Y)
 
     def parameters_changed(self):
         """
-        Method that is called upon any changes to :class:`~GPy.core.parameterization.param.Param` variables within the model.
+        Method that is called upon any changes to :py:class:`~GPy.core.parameterization.param.Param` variables within the model.
         In particular in the GP class this method re-performs inference, recalculating the posterior and log marginal likelihood and gradients of the model
 
         .. warning::
@@ -266,7 +306,7 @@ class GP(Model):
 
     def _raw_predict(self, Xnew, full_cov=False, kern=None):
         """
-        For making predictions, does not account for normalization or likelihood
+        For making predictions, does not account for normalization or likelihood. Use public methods predict and predict_noiseless for more general prediction.
 
         full_cov is a boolean which defines whether the full covariance matrix
         of the prediction is computed. If full_cov is False (default), only the
@@ -287,17 +327,18 @@ class GP(Model):
         Predict the function(s) at the new point(s) Xnew. This includes the likelihood
         variance added to the predicted underlying function (usually referred to as f).
 
-        In order to predict without adding in the likelihood give
-        `include_likelihood=False`, or refer to self.predict_noiseless().
+        In order to predict without adding in the likelihood, i.e. :math:`p(\mathbf{F}^{*}|\mathbf{X}^{*}, \mathbf{Y})`, give `include_likelihood=False`, or refer to self.predict_noiseless().
 
         :param Xnew: The points at which to make a prediction
         :type Xnew: np.ndarray (Nnew x self.input_dim)
         :param full_cov: whether to return the full covariance matrix, or just
                          the diagonal
         :type full_cov: bool
-        :param Y_metadata: metadata about the predicting point to pass to the likelihood
+        :param Y_metadata: Dict of metadata about the predicting point (Y*) to pass to the likelihood
+        :type Y_metadata: None | dict
         :param kern: The kernel to use for prediction (defaults to the model
                      kern). this is useful for examining e.g. subprocesses.
+        :type kern: :py:class:`~GPy.kern.src.kern.Kern` | None
         :param bool include_likelihood: Whether or not to add likelihood noise to the predicted underlying latent function f.
 
         :returns: (mean, var):
@@ -326,7 +367,7 @@ class GP(Model):
     def predict_noiseless(self,  Xnew, full_cov=False, Y_metadata=None, kern=None):
         """
         Convenience function to predict the underlying function of the GP (often
-        referred to as f) without adding the likelihood variance on the
+        referred to as f) at :math:`\mathbf{X}^{*}` (X^{*} is size [Nnew, input_dim]) without adding the likelihood variance on the
         prediction function.
 
         This is most likely what you want to use for your predictions.
@@ -339,30 +380,34 @@ class GP(Model):
         :param Y_metadata: metadata about the predicting point to pass to the likelihood
         :param kern: The kernel to use for prediction (defaults to the model
                      kern). this is useful for examining e.g. subprocesses.
+        :type kern: :py:class:`~GPy.kern.src.kern.Kern` | None
 
-        :returns: (mean, var):
-            mean: posterior mean, a Numpy array, Nnew x self.input_dim
-            var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+        :returns: mean: posterior mean, a Numpy array, Nnew x self.input_dim
+                  var: posterior variance, a Numpy array, Nnew x 1 if full_cov=False, Nnew x Nnew otherwise
+        :rtype: tuple(np.ndarray (Nnew x self.input_dim), np.ndarray(Nnew x self.input_dim))
 
            If full_cov and self.input_dim > 1, the return shape of var is Nnew x Nnew x self.input_dim. If self.input_dim == 1, the return shape is Nnew x Nnew.
            This is to allow for different normalizations of the output dimensions.
 
-        Note: If you want the predictive quantiles (e.g. 95% confidence interval) use :py:func:"~GPy.core.gp.GP.predict_quantiles".
+        .. Note::
+            If you want the predictive quantiles (e.g. 95% confidence interval) use :py:func:`~GPy.core.gp.GP.predict_quantiles`.
         """
-        return self.predict(Xnew, full_cov, Y_metadata, kern, None, False)
+        return self.predict(Xnew, full_cov, Y_metadata, kern=kern, likelihood=None, include_likelihood=False)
 
     def predict_quantiles(self, X, quantiles=(2.5, 97.5), Y_metadata=None, kern=None, likelihood=None):
         """
-        Get the predictive quantiles around the prediction at X
+        Get the predictive quantiles around the prediction at :math:`\mathbf{X}^{*}` (X is size [Nnew, Q]),
 
-        :param X: The points at which to make a prediction
-        :type X: np.ndarray (Xnew x self.input_dim)
+        :param X: The points at which to get the predictive quantiles
+        :type X: np.ndarray (Nnew x self.input_dim)
         :param quantiles: tuple of quantiles, default is (2.5, 97.5) which is the 95% interval
         :type quantiles: tuple
-        :param kern: optional kernel to use for prediction
+        :param kern: The kernel to use for prediction (defaults to the model
+                     kern). this is useful for examining e.g. subprocesses.
+        :type kern: :py:class:`~GPy.kern.src.kern.Kern` | None
         :type predict_kw: dict
         :returns: list of quantiles for each X and predictive quantiles for interval combination
-        :rtype: [np.ndarray (Xnew x self.output_dim), np.ndarray (Xnew x self.output_dim)]
+        :rtype: list( np.ndarray (Xnew x self.output_dim), ..., np.ndarray (Xnew x self.output_dim)) )
         """
         m, v = self._raw_predict(X,  full_cov=False, kern=kern)
         if likelihood is None:
@@ -376,19 +421,25 @@ class GP(Model):
 
     def predictive_gradients(self, Xnew, kern=None):
         """
-        Compute the derivatives of the predicted latent function with respect to X*
+        Compute the derivatives of the mean, :math:`\mathbf{\mu}^{*}`, and variance, :math:`\mathbf{v}^{*}`, of the predicted latent functions, :math:`N(\mathbf{F}^{*}|\mathbf{\mu}^{*}, \mathbf{v}^{*})`, with respect to :math:`\mathbf{X}^{*}` (Xnew is size [N*,Q]),
+
+        .. math:
+            \\frac{d\mathbf{\\mu}^{*}}{d \mathbf{X}^{*}}
+            \\frac{d\mathbf{\\sigma^{2}u}^{*}}{d \mathbf{X}^{*}}
 
         Given a set of points at which to predict X* (size [N*,Q]), compute the
         derivatives of the mean and variance. Resulting arrays are sized:
-         dmu_dX* -- [N*, Q ,D], where D is the number of output in this GP (usually one).
+         dmu_dX* -- [N*, Q ,D], where D is the number of output in this GP (usually one), N* is the number of predictive points, and Q is the dimensionality of the input X*.
 
-        Note that this is not the same as computing the mean and variance of the derivative of the function!
+        Note that this is not the same as computing the mean and variance of the derivative of the function! For this use use :py:func:"~GPy.core.gp.GP.predict_jacobian".
 
          dv_dX*  -- [N*, Q],    (since all outputs have the same variance)
-        :param X: The points at which to get the predictive gradients
-        :type X: np.ndarray (Xnew x self.input_dim)
+        :param Xnew: The points at which to get the predictive gradients, X^{*}
+        :type Xnew: np.ndarray (N* x Q)
+        :param kern: kernel compute the gradient using, default is None and will revert to the kernel of the model.
+        :type kern: :py:class:`GPy.kern.src.kern.Kern` | None
         :returns: dmu_dX, dv_dX
-        :rtype: [np.ndarray (N*, Q ,D), np.ndarray (N*,Q) ]
+        :rtype: tuple(np.ndarray (N*, Q ,D), np.ndarray (N*,Q))
 
         """
         if kern is None:
@@ -417,8 +468,15 @@ class GP(Model):
         """
         Compute the derivatives of the posterior of the GP.
 
-        Given a set of points at which to predict X* (size [N*,Q]), compute the
-        mean and variance of the derivative. Resulting arrays are sized:
+        Given a set of points at which to predict :math:`\mathbf{X}^{*}` (Xnew is size [N*,Q]), compute the
+        mean and variance of the derivative.
+
+        .. math:
+            \\frac{d p(\mathbf{F}^*|\mathbf{X}^*)}{d \mathbf{X}^{*}}
+
+        Since this is a Gaussian process itself, it is represented as simple a mean and a (co)variance itself.
+
+        Resulting arrays are sized:
 
          dL_dX* -- [N*, Q ,D], where D is the number of output in this GP (usually one).
           Note that this is the mean and variance of the derivative,
@@ -428,14 +486,15 @@ class GP(Model):
           If there is missing data, it is not implemented for now, but
           there will be one output variance per output dimension.
 
-        :param X: The points at which to get the predictive gradients.
-        :type X: np.ndarray (Xnew x self.input_dim)
-        :param kern: The kernel to compute the jacobian for.
+        :param Xnew: The points at which to get the predictive gradients.
+        :type Xnew: np.ndarray (N* x Q)
+        :param kern: kernel compute the jacobian for, default is None and will revert to the kernel of the model.
+        :type kern: :py:class:`GPy.kern.src.kern.Kern` | None
         :param boolean full_cov: whether to return the cross-covariance terms between
-        the N* Jacobian vectors
+                                the N* Jacobian vectors
 
         :returns: dmu_dX, dv_dX
-        :rtype: [np.ndarray (N*, Q ,D), np.ndarray (N*,Q,(D)) ]
+        :rtype: tuple(np.ndarray (N*, Q ,D), np.ndarray (N*,Q,(D)))
         """
         if kern is None:
             kern = self.kern
@@ -480,12 +539,19 @@ class GP(Model):
 
     def predict_wishart_embedding(self, Xnew, kern=None, mean=True, covariance=True):
         """
-        Predict the wishart embedding G of the GP. This is the density of the
+        Predict the wishart embedding, G, of the GP. This is the density of the
         input of the GP defined by the probabilistic function mapping f.
+
         G = J_mean.T*J_mean + output_dim*J_cov.
 
-        :param array-like Xnew: The points at which to evaluate the magnification.
-        :param :py:class:`~GPy.kern.Kern` kern: The kernel to use for the magnification.
+        using the Jacobian mean and covariance
+
+        :param Xnew: The points at which to evaluate the magnification.
+        :type Xnew: np.ndarray (N* x Q)
+        :param kern: The kernel to use for the magnification. Default is None and will revert to the kernel of the model.
+        :type kern: :py:class:`GPy.kern.src.kern.Kern` | None
+        :param bool mean: whether to include the mean of the wishart embedding.
+        :param bool covariance: whether to include the covariance of the wishart embedding.
 
         Supplying only a part of the learning kernel gives insights into the density
         of the specific kernel part of the input function. E.g. one can see how dense the
@@ -510,17 +576,29 @@ class GP(Model):
         return G
 
     def predict_wishard_embedding(self, Xnew, kern=None, mean=True, covariance=True):
+        """
+        .. deprecated:: 1.8.4
+            This function is being deprecated, please use conditional_mean instead.
+        """
         warnings.warn("Wrong naming, use predict_wishart_embedding instead. Will be removed in future versions!", DeprecationWarning)
         return self.predict_wishart_embedding(Xnew, kern, mean, covariance)
 
     def predict_magnification(self, Xnew, kern=None, mean=True, covariance=True, dimensions=None):
         """
-        Predict the magnification factor as
+        Predict the magnification factor using the wishart embedding as
 
-        sqrt(det(G))
+        .. math:
+            MF = sqrt(det(\mathbf{G}))
+            G = J_mean.T*J_mean + output_dim*J_cov.
+
+        using the Jacobian mean and covariance
 
         for each point N in Xnew.
 
+        :param Xnew: The points at which to evaluate the magnification.
+        :type Xnew: np.ndarray (N* x Q)
+        :param kern: The kernel to use for the magnification. Default is None and will revert to the kernel of the model.
+        :type kern: :py:class:`GPy.kern.src.kern.Kern` | None
         :param bool mean: whether to include the mean of the wishart embedding.
         :param bool covariance: whether to include the covariance of the wishart embedding.
         :param array-like dimensions: which dimensions of the input space to use [defaults to self.get_most_significant_input_dimensions()[:2]]
@@ -540,16 +618,14 @@ class GP(Model):
 
     def posterior_samples_f(self,X, size=10, full_cov=True, **predict_kwargs):
         """
-        Samples the posterior GP at the points X.
+        Samples the posterior GP, :math:`p(\mathbf{F}^{*}|\mathbf{Y}, \mathbf{X}^{*})`, without the additional predicted likelihood corruption, at the points X.
 
         :param X: The points at which to take the samples.
         :type X: np.ndarray (Nnew x self.input_dim)
-        :param size: the number of a posteriori samples.
-        :type size: int.
-        :param full_cov: whether to return the full covariance matrix, or just the diagonal.
-        :type full_cov: bool.
+        :param int size: the number of a posteriori samples.
+        :param bool full_cov: whether to return the full covariance matrix, or just the diagonal.
         :returns: fsim: set of simulations
-        :rtype: np.ndarray (D x N x samples) (if D==1 we flatten out the first dimension)
+        :rtype: np.ndarray (output_dim x Nnew x size) (if output_dim==1 we flatten out the first dimension)
         """
         m, v = self._raw_predict(X,  full_cov=full_cov, **predict_kwargs)
         if self.normalizer is not None:
@@ -576,18 +652,15 @@ class GP(Model):
 
     def posterior_samples(self, X, size=10, full_cov=False, Y_metadata=None, likelihood=None, **predict_kwargs):
         """
-        Samples the posterior GP at the points X.
+        Samples the posterior GP with likelihood noise added, :math:`p(\mathbf{Y}^{*}|\mathbf{Y}, \mathbf{X})`, at the points X.
 
         :param X: the points at which to take the samples.
         :type X: np.ndarray (Nnew x self.input_dim.)
-        :param size: the number of a posteriori samples.
-        :type size: int.
-        :param full_cov: whether to return the full covariance matrix, or just the diagonal.
-        :type full_cov: bool.
-        :param noise_model: for mixed noise likelihood, the noise model to use in the samples.
-        :type noise_model: integer.
+        :param int size: the number of a posteriori samples.
+        :param bool full_cov: whether to return the full covariance matrix, or just the diagonal.
+        :param int noise_model: for mixed noise likelihood, the noise model to use in the samples.
         :returns: Ysim: set of simulations,
-        :rtype: np.ndarray (D x N x samples) (if D==1 we flatten out the first dimension)
+        :rtype: np.ndarray (output_dim x Nnew x size) (if output_dim==1 we flatten out the first dimension)
         """
         fsim = self.posterior_samples_f(X, size, full_cov=full_cov, **predict_kwargs)
         if likelihood is None:
@@ -602,10 +675,18 @@ class GP(Model):
     def input_sensitivity(self, summarize=True):
         """
         Returns the sensitivity for each dimension of this model
+
+        :param bool summarize: Whether to summarise the results
         """
         return self.kern.input_sensitivity(summarize=summarize)
 
     def get_most_significant_input_dimensions(self, which_indices=None):
+        """
+        Using the sensitivity as a proxy for significance, return the dimensions that are more significant, otherwise simply return the requested dimensions.
+
+        :param which_indices: force the indices to be the given indices.
+        :type which_indices: int or tuple(int,int) or tuple(int,int,int)
+        """
         return self.kern.get_most_significant_input_dimensions(which_indices)
 
     def optimize(self, optimizer=None, start=None, messages=False, max_iters=1000, ipython_notebook=True, clear_after_finish=False, **kwargs):
@@ -613,12 +694,14 @@ class GP(Model):
         Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors.
         kwargs are passed to the optimizer. They can be:
 
-        :param max_iters: maximum number of function evaluations
-        :type max_iters: int
-        :messages: whether to display during optimisation
-        :type messages: bool
         :param optimizer: which optimizer to use (defaults to self.preferred optimizer), a range of optimisers can be found in :module:`~GPy.inference.optimization`, they include 'scg', 'lbfgs', 'tnc'.
         :type optimizer: string
+        :param start:
+        :type start:
+        :param messages: whether to display during optimisation
+        :type messages: bool
+        :param max_iters: maximum number of function evaluations
+        :type max_iters: int
         :param bool ipython_notebook: whether to use ipython notebook widgets or not.
         :param bool clear_after_finish: if in ipython notebook, we can clear the widgets after optimization.
         """
@@ -633,46 +716,48 @@ class GP(Model):
 
     def infer_newX(self, Y_new, optimize=True):
         """
-        Infer X for the new observed data *Y_new*.
+        Infer the most likely input locations X_new for the newly observed data *Y_new*. Mostly used within dimensionality reduction for testset predictions.
 
         :param Y_new: the new observed data for inference
-        :type Y_new: numpy.ndarray
+        :type Y_new: numpy.ndarray (Nnew x self.input_dim)
         :param optimize: whether to optimize the location of new X (True by default)
         :type optimize: boolean
         :return: a tuple containing the posterior estimation of X and the model that optimize X
-        :rtype: (:class:`~GPy.core.parameterization.variational.VariationalPosterior` and numpy.ndarray, :class:`~GPy.core.model.Model`)
+        :rtype: tuple(:class:`~GPy.core.parameterization.variational.VariationalPosterior` and numpy.ndarray, :class:`~GPy.core.model.Model`)
         """
         from ..inference.latent_function_inference.inferenceX import infer_newX
         return infer_newX(self, Y_new, optimize=optimize)
 
     def log_predictive_density(self, x_test, y_test, Y_metadata=None):
         """
-        Calculation of the log predictive density
+        Calculation of the log predictive density.
 
         .. math:
-            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+            p(\mathbf{Y}_{*}|D) = p(\mathbf{Y}_{*}|\mathbf{F}_{*})p(\mathbf{F}_{*}|\mathbf{\mu}_{*}\mathbf{\\sigma^{2}}_{*})
 
-        :param x_test: test locations (x_{*})
-        :type x_test: (Nx1) array
-        :param y_test: test observations (y_{*})
-        :type y_test: (Nx1) array
-        :param Y_metadata: metadata associated with the test points
+        :param x_test: test locations (:math:`\mathbf{x}_{*}`)
+        :type x_test: np.ndarray (Nnew x self.input_dim)
+        :param y_test: test observations (:math:`\mathbf{y}_{*}`)
+        :type y_test: np.ndarray (Nnew x self.output_dim)
+        :param Y_metadata: Dictionary containing auxillary information for Y, not usually needed for offset regression if iid Gaussian likelihood used. Default None
+        :type Y_metadata: None | dict
         """
         mu_star, var_star = self._raw_predict(x_test)
         return self.likelihood.log_predictive_density(y_test, mu_star, var_star, Y_metadata=Y_metadata)
 
     def log_predictive_density_sampling(self, x_test, y_test, Y_metadata=None, num_samples=1000):
         """
-        Calculation of the log predictive density by sampling
+        Calculation of the log predictive density by sampling rather than attempting analytically
 
         .. math:
-            p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
+            p(\mathbf{Y}_{*}|D) = p(\mathbf{Y}_{*}|\mathbf{F}_{*})p(\mathbf{F}_{*}|\mathbf{\mu}_{*}\mathbf{\\sigma^{2}}_{*})
 
-        :param x_test: test locations (x_{*})
-        :type x_test: (Nx1) array
-        :param y_test: test observations (y_{*})
-        :type y_test: (Nx1) array
-        :param Y_metadata: metadata associated with the test points
+        :param x_test: test locations (:math:`\mathbf{x}_{*}`)
+        :type x_test: np.ndarray (Nnew x self.input_dim)
+        :param y_test: test observations (:math:`\mathbf{y}_{*}`)
+        :type y_test: np.ndarray (Nnew x self.output_dim)
+        :param Y_metadata: Dictionary containing auxillary information for Y, not usually needed for offset regression if iid Gaussian likelihood used. Default None
+        :type Y_metadata: None | dict
         :param num_samples: number of samples to use in monte carlo integration
         :type num_samples: int
         """

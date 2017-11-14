@@ -19,23 +19,34 @@ class SparseGPMiniBatch(SparseGP):
     """
     A general purpose Sparse GP model, allowing missing data and stochastics across dimensions.
 
-    This model allows (approximate) inference using variational DTC or FITC
+    This model allows (approximate) inference using variational inference, DTC or FITC
     (Gaussian likelihoods) as well as non-conjugate sparse methods based on
     these.
 
-    :param X: inputs
-    :type X: np.ndarray (num_data x input_dim)
-    :param likelihood: a likelihood instance, containing the observed data
-    :type likelihood: GPy.likelihood.(Gaussian | EP | Laplace)
-    :param kernel: the kernel (covariance function). See link kernels
-    :type kernel: a GPy.kern.kern instance
-    :param X_variance: The uncertainty in the measurements of X (Gaussian variance)
-    :type X_variance: np.ndarray (num_data x input_dim) | None
+    :param X: Input observations, either known or with Gaussian input uncertainty
+    :type X: np.ndarray (num_data x input_dim) | py:class:`~GPy.core.parameterization.variational.NormalPosterior`
+    :param Y: Observed data (np.ndarray)
+    :type Y: np.ndarray (num_data x output_dim)
     :param Z: inducing inputs
     :type Z: np.ndarray (num_inducing x input_dim)
-    :param num_inducing: Number of inducing points (optional, default 10. Ignored if Z is not None)
-    :type num_inducing: int
-
+    :param kernel: the kernel (covariance function). See link kernels
+    :type kernel: a GPy.kern.kern instance
+    :param likelihood: a likelihood instance, currently the default variational inference DTC method is only implemented for Gaussian
+    :type likelihood: py:class:`~GPy.likelihoods.likelihood.Likelihood`
+    :param inference_method: Inference method used. Variational inference method as in the original paper used if not specified.
+    :type inference_method: :py:class:`~GPy.inference.latent_function_inference.LatentFunctionInference` | None
+    :param str name: Naming given to model
+    :param Y_metadata: Dictionary containing auxillary information for Y, usually only needed when likelihood is not iid Gaussian. Default None
+    :type Y_metadata: None | dict
+    :param normalizer:
+        normalize the outputs Y.
+        Prediction will be un-normalized using this normalizer.
+        If normalizer is None, we will normalize using Standardize.
+        If normalizer is False, no normalization will be done.
+    :type normalizer: True, False, :py:class:`~GPy.util.normalizer._Norm` object
+    :param bool missing_data: If missing data exists in the output (Y contains np.nan) missing data can be specified and these outputs will be marginalised out analytically. Default False
+    :param bool stochastic: Whether to visit output dimensions stochastically when computing gradients
+    :param int batchsize: If calculating gradient by stochastically choosing output dimensions, how many output dimensions should be used at a time to get an approximate gradient
     """
 
     def __init__(self, X, Y, Z, kernel, likelihood, inference_method=None,
@@ -76,6 +87,14 @@ class SparseGPMiniBatch(SparseGP):
         self.posterior = None
         
     def optimize(self, optimizer=None, start=None, **kwargs):
+        """
+        Optimise the hyperparameters and variational parameters to a MAP solution.
+
+        :param optimizer: which optimizer to use (defaults to self.preferred optimizer), a range of optimisers can be found in :module:`~GPy.inference.optimization`, they include 'scg', 'lbfgs', 'tnc'.
+        :type optimizer: string
+        :param start:
+        :type start:
+        """
         try:
             self._update_stochastics = True
             SparseGP.optimize(self, optimizer=optimizer, start=start, **kwargs)
@@ -83,6 +102,11 @@ class SparseGPMiniBatch(SparseGP):
             self._update_stochastics = False
             
     def has_uncertain_inputs(self):
+        """
+        Checks whether the input has uncertainty
+
+        :rtype: bool
+        """
         return isinstance(self.X, VariationalPosterior)
 
     def _inner_parameters_changed(self, kern, X, Z, likelihood, Y, Y_metadata, Lm=None, dL_dKmm=None, psi0=None, psi1=None, psi2=None, **kwargs):

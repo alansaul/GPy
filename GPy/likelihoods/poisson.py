@@ -12,8 +12,13 @@ class Poisson(Likelihood):
     """
     Poisson likelihood
 
+    This likelihood is typically used when observations, Y, are counts (non-negative integers), and the rate at which the counts occur is of interest.
+
     .. math::
         p(y_{i}|\\lambda(f_{i})) = \\frac{\\lambda(f_{i})^{y_{i}}}{y_{i}!}e^{-\\lambda(f_{i})}
+
+    :param gp_link: transformation function, default is Log (ensure rate is positive).
+    :type gp_link: py:class:`~GPy.likelihoods.link_functions.GPTransformation`
 
     .. Note::
         Y is expected to take values in {0,1,2,...}
@@ -26,9 +31,21 @@ class Poisson(Likelihood):
 
     def _conditional_mean(self, f):
         """
-        the expected value of y given a value of f
+        .. deprecated: 1.8.4
+            This function is being deprecated, please use conditional_mean instead.
         """
         return self.gp_link.transf(f)
+
+    def to_dict(self):
+        """
+        Make a dictionary of all the important features of the likelihood in order to recreate it at a later date.
+
+        :returns: Dictionary of likelihood
+        :rtype: dict
+        """
+        input_dict = super(Poisson, self)._to_dict()
+        input_dict["class"] = "GPy.likelihoods.Poisson"
+        return input_dict
 
     def pdf_link(self, link_f, y, Y_metadata=None):
         """
@@ -37,13 +54,14 @@ class Poisson(Likelihood):
         .. math::
             p(y_{i}|\\lambda(f_{i})) = \\frac{\\lambda(f_{i})^{y_{i}}}{y_{i}!}e^{-\\lambda(f_{i})}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in poisson distribution
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for standard poisson likelihood
+        :type Y_metadata: dict
         :returns: likelihood evaluated for this point
-        :rtype: float
+        :rtype: np.ndarray(num_data x output_dim)
         """
         assert np.atleast_1d(link_f).shape == np.atleast_1d(y).shape
         return np.exp(self.logpdf_link(link_f, y, Y_metadata))
@@ -56,13 +74,14 @@ class Poisson(Likelihood):
         .. math::
             \\ln p(y_{i}|\lambda(f_{i})) = -\\lambda(f_{i}) + y_{i}\\log \\lambda(f_{i}) - \\log y_{i}!
 
-        :param link_f: latent variables (link(f))
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in poisson distribution
-        :returns: likelihood evaluated for this point
-        :rtype: float
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for standard poisson likelihood
+        :type Y_metadata: dict
+        :returns: log likelihood evaluated for this point
+        :rtype: np.ndarray(num_data x output_dim)
 
         """
         return -link_f + y*np.log(link_f) - special.gammaln(y+1)
@@ -74,14 +93,14 @@ class Poisson(Likelihood):
         .. math::
             \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\lambda(f)} = \\frac{y_{i}}{\\lambda(f_{i})} - 1
 
-        :param link_f: latent variables (f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in poisson distribution
-        :returns: gradient of likelihood evaluated at points
-        :rtype: Nx1 array
-
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for standard poisson likelihood
+        :type Y_metadata: dict
+        :returns: gradient of log likelihood evaluated at points link(f)
+        :rtype: np.ndarray(num_data x output_dim)
         """
         return y/link_f - 1
 
@@ -94,13 +113,14 @@ class Poisson(Likelihood):
         .. math::
             \\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}\\lambda(f)} = \\frac{-y_{i}}{\\lambda(f_{i})^{2}}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in poisson distribution
-        :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
-        :rtype: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for standard poisson likelihood
+        :type Y_metadata: dict
+        :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points link(f))
+        :rtype: np.ndarray(num_data x output_dim)
 
         .. Note::
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
@@ -115,13 +135,14 @@ class Poisson(Likelihood):
         .. math::
             \\frac{d^{3} \\ln p(y_{i}|\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{2y_{i}}{\\lambda(f_{i})^{3}}
 
-        :param link_f: latent variables link(f)
-        :type link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in poisson distribution
-        :returns: third derivative of likelihood evaluated at points f
-        :rtype: Nx1 array
+        :param link_f: latent variables link of f.
+        :type link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for standard poisson likelihood
+        :type Y_metadata: dict
+        :returns: third derivative of log likelihood evaluated at points link(f)
+        :rtype: np.ndarray(num_data x output_dim)
         """
         d3lik_dlink3 = 2*y/(link_f)**3
         return d3lik_dlink3
@@ -129,12 +150,18 @@ class Poisson(Likelihood):
     def conditional_mean(self,gp):
         """
         The mean of the random variable conditioned on one value of the GP
+
+        :param gp: untransformed Gaussian process value
+        :type gp: np.ndarray (num_data x output_dim)
         """
         return self.gp_link.transf(gp)
 
     def conditional_variance(self,gp):
         """
         The variance of the random variable conditioned on one value of the GP
+
+        :param gp: untransformed Gaussian process value
+        :type gp: np.ndarray (num_data x output_dim)
         """
         return self.gp_link.transf(gp)
 
@@ -142,7 +169,12 @@ class Poisson(Likelihood):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 
-        :param gp: latent variable
+        :param gp: latent variable f, before it has been transformed (squashed)
+        :type gp: np.ndarray (num_pred_points x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for standard poisson likelihood
+        :type Y_metadata: dict
+        :returns: Samples from the likelihood using these values for the latent function
+        :rtype: np.ndarray (num_pred_points x output_dim)
         """
         orig_shape = gp.shape
         gp = gp.flatten()

@@ -6,6 +6,15 @@ from paramz.core.parameter_core import Parameterizable
 from functools import reduce
 
 class Priorizable(Parameterizable):
+    """
+    Priorizable base class allows parameters to have priors set on them. Constraining parameters into reasonable identifiable regions is often essential for effective model fitting.
+
+    Many specific priors are already implemented, this base class allows parameterizable objects to have these specific implementations set for certain parameters easily.
+
+    :param str name: Name of parameter which is priorizable
+    :param default_prior: If no prior specific prior is supplied for this parameter, what prior should be used. Default None which means there is no default prior for this parameter.
+    :type default_prior: :py:class:`~GPy.core.parameterization.priors.Prior` | None
+    """
     def __init__(self, name, default_prior=None, *a, **kw):
         super(Priorizable, self).__init__(name=name, *a, **kw)
         self._default_prior_ = default_prior
@@ -18,14 +27,15 @@ class Priorizable(Parameterizable):
         super(Priorizable, self).__setstate__(state)
         #self._index_operations['priors'] = self.priors
 
-
     #===========================================================================
     # Prior Operations
     #===========================================================================
     def set_prior(self, prior, warning=True):
         """
         Set the prior for this object to prior.
-        :param :class:`~GPy.priors.Prior` prior: a prior to set for this parameter
+
+        :param prior: a prior to set for this parameter
+        :type prior: :py:class:`~GPy.core.parameterization.priors.Prior`
         :param bool warning: whether to warn if another prior was set for this parameter
         """
         repriorized = self.unset_priors()
@@ -47,7 +57,7 @@ class Priorizable(Parameterizable):
         return self._remove_from_index_operations(self.priors, priors)
 
     def log_prior(self):
-        """evaluate the prior"""
+        """ Evaluate the log priors value given that the parameters are currently set to some specific value """
         if self.priors.size == 0:
             return 0.
         x = self.param_array
@@ -65,7 +75,7 @@ class Priorizable(Parameterizable):
         return log_p + log_j
 
     def _log_prior_gradients(self):
-        """evaluate the gradients of the priors"""
+        """ Evaluate the gradients of the log prior given that the parameters are currently set to some specific value """
         if self.priors.size == 0:
             return 0.
         x = self.param_array

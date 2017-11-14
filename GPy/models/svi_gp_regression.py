@@ -9,20 +9,23 @@ from .. import kern
 
 class SVIGPRegression(SVGP):
     """
-    Gaussian Process model for Stochastic Variational Inference GP regression with Gaussian likelihood
-    Gaussian Processes for Big data, Hensman, Fusi and Lawrence, UAI 2013
+    Gaussian Process model for Stochastic Variational Inference GP regression with Gaussian likelihood.
 
-    This is a thin wrapper around the SVGP class, with a set of sensible default values
+    Based on:
+        Gaussian Processes for Big data, Hensman, Fusi and Lawrence, UAI 2013
 
-    :param X: input observations
-    :param Y: observed values
+    This is a thin wrapper around the SVGP class, with a set of sensible default parameter values
+
+    :param X: Input observations
+    :type X: np.ndarray (num_data x input_dim)
+    :param Y: Observed output data
+    :type Y: np.ndarray (num_data x output_dim)
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (num_inducing x input_dim) | None
     :param kernel: a GPy kernel, defaults to rbf+white
-    :param batchsize: number of datum in each batch (default 500, use None if one batch is to be used).
-    :type batchsize: int
-    :param num_inducing: number of inducing points (ignored if Z is passed, see note)
-    :type num_inducing: int
+    :type kernel: :py:class:`~GPy.kern.src.kern.Kern` instance | None
+    :param int batchsize: number of datum in each batch (default 500, use None if one batch is to be used).
+    :param int num_inducing: number of inducing points (ignored if Z is passed, see note)
     :rtype: model object
 
     .. Note:: If no Z array is passed, num_inducing (default 10) points are selected from the data. Other wise num_inducing is ignored

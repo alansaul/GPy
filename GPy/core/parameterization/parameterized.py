@@ -9,7 +9,7 @@ logger = logging.getLogger("parameters changed meta")
 
 class Parameterized(Parameterized, Priorizable):
     """
-    Parameterized class
+    Parameterized class, inherited from 'paramz' package. See that project for further details. For convenience some essential usage information is listed here.
 
     Say m is a handle to a parameterized class.
 

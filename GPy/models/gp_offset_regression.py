@@ -13,21 +13,27 @@ class GPOffsetRegression(GP):
     Gaussian Process model for offset regression
 
     :param X: input observations, we assume for this class that this has one dimension of actual inputs and the last dimension should be the index of the cluster (so X should be Nx2)
+    :type X: np.ndarray (num_data x 2)
     :param Y: observed values (Nx1?)
+    :type Y: np.ndarray (num_data x 1)
     :param kernel: a GPy kernel, defaults to rbf
-    :param Norm normalizer: [False]
-    :param noise_var: the noise variance for Gaussian likelhood, defaults to 1.
-
-        Normalize Y with the norm given.
-        If normalizer is False, no normalization will be done
-        If it is None, we use GaussianNorm(alization)
+    :type kernel: :py:class:`~GPy.kern.src.kern.Kern` | None
+    :param Y_metadata: Dictionary containing auxillary information for Y, not usually needed for offset regression as Gaussian likelihood used. Default None
+    :type Y_metadata: None | dict
+    :param normalizer:
+        normalize the outputs Y.
+        Prediction will be un-normalized using this normalizer.
+        If normalizer is None, we will normalize using Standardize.
+        If normalizer is False, no normalization will be done.
+    :type normalizer: True, False, :py:class:`~GPy.util.normalizer._Norm` object
+    :param float noise_var: the noise variance for Gaussian likelhood, defaults to 1.
+    :param mean_function: Mean function to be used for the Gaussian process prior, defaults to zero mean
+    :type mean_function: :py:class:`~GPy.core.mapping.Mapping` | None
 
     .. Note:: Multiple independent outputs are allowed using columns of Y
-
     """
 
     def __init__(self, X, Y, kernel=None, Y_metadata=None, normalizer=None, noise_var=1., mean_function=None):
-
         assert X.shape[1]>1, "Need at least two input dimensions, as last dimension is the label of the cluster"
         if kernel is None:
             kernel = kern.RBF(X.shape[1]-1)
@@ -52,9 +58,9 @@ class GPOffsetRegression(GP):
                 
         
     def dr_doffset(self,X,sel,delta):
-        #given an input matrix, X and the offsets (delta)
-        #finds dr/dDelta
-        #returns them as a list, one for each offset (delta).        
+        """
+        Given an input matrix, X and the offsets (delta), finds dr/dDelta and returns them as a list, one for each offset (delta).
+        """
         #get the input values
 
         #a matrix G represents the effect of increasing the offset on the radius passed to the kernel for each input. For example

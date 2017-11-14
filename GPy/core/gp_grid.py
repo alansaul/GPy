@@ -29,15 +29,32 @@ logger = logging.getLogger("gp grid")
 
 class GpGrid(GP):
     """
-    A GP model for Grid inputs
+    A GP model for Grid inputs.
 
-    :param X: inputs
+    Inference where the inputs are on a grid allows computational savings to be made. 
+
+    Based on work of:
+        Gilboa, E., Saatci, Y., & Cunningham, J. P. (2015). Scaling multidimensional inference for structured Gaussian processes. IEEE transactions on pattern analysis and machine intelligence, 37(2), 424-436.
+
+    :param X: input observations
     :type X: np.ndarray (num_data x input_dim)
-    :param likelihood: a likelihood instance, containing the observed data
-    :type likelihood: GPy.likelihood.(Gaussian | EP | Laplace)
-    :param kernel: the kernel (covariance function). See link kernels
-    :type kernel: a GPy.kern.kern instance
-
+    :param Y: output observations
+    :type Y: np.ndarray (num_data x output_dim)
+    :param kernel: a GPy kernel
+    :type kernel: :py:class:`~GPy.kern.src.kern.Kern` instance
+    :param likelihood: a GPy likelihood. Currently only Gaussian is supported.
+    :type likelihood: :py:class:`~GPy.likelihoods.likelihood.Likelihood` instance
+    :param None inference_method: this is overriden and :py:class:`~GPy.latent_function_inference.gaussian_grid_inference.GaussianGridInference` will be used.
+    :param str name: name given to instance
+    :param Y_metadata: Dictionary containing auxillary information for Y, not usually needed for offset regression if iid Gaussian likelihood used. Default None
+    :type Y_metadata: None | dict
+    :param normalizer:
+        normalize the outputs Y.
+        Prediction will be un-normalized using this normalizer.
+        If normalizer is None, we will normalize using Standardize.
+        If normalizer is False, no normalization will be done.
+    :type normalizer: True, False, :py:class:`~GPy.util.normalizer._Norm` object
+    :rtype: model object
     """
 
     def __init__(self, X, Y, kernel, likelihood, inference_method=None,

@@ -8,14 +8,20 @@ from ..core import Param
 
 class SparseGPLVM(SparseGPRegression):
     """
-    Sparse Gaussian Process Latent Variable Model
+    Sparse Gaussian Process Latent Variable Model.
+ 
+    This is an identical model to the :py:class:`~GPy.models.sparse_gp_regression.SparseGPRegression` model, but where X's are simply optimised at the same time as the hyper-parameters. There is no input uncertainty around the X locations.
 
-    :param Y: observed data
-    :type Y: np.ndarray
-    :param input_dim: latent dimensionality
-    :type input_dim: int
-    :param init: initialisation method for the latent space
+    :param Y: Observed data
+    :type Y: np.ndarray (num_data x output_dim)
+    :param int input_dim: Latent dimensionality
+    :param X: Latent space locations - if specified initialisation such as PCA will be ignored
+    :type X: np.ndarray (num_data x input_dim)
+    :param kernel: the kernel (covariance function). See link kernels. RBF used if not specified
+    :type kernel: :py:class:`~GPy.kern.src.kern.Kern` instance | None
+    :param init: Initialisation method for the latent space
     :type init: 'PCA'|'random'
+    :param int num_inducing: Number of inducing points for sparse approximation (optional, default 10. Ignored if Z is not None)
 
     """
     def __init__(self, Y, input_dim, X=None, kernel=None, init='PCA', num_inducing=10):

@@ -11,21 +11,41 @@ from GPy.core.parameterization.variational import NormalPosterior
 
 class SparseGPRegression(SparseGP_MPI):
     """
-    Gaussian Process model for regression
+    Gaussian Process model for variational sparse regression.
 
-    This is a thin wrapper around the SparseGP class, with a set of sensible defalts
+    This is a thin wrapper around the :py:class:`~GPy.core.SparseGP_MPI` class, with a set of sensible default parameters. It uses a Gaussian likelihood varaitional inference to allow scalability. This is an extension basic Gaussian process model, where output observations are assumed to be a real number, but that the information can be compressed into a smaller number of 'inducing points'.
 
-    :param X: input observations
-    :param X_variance: input uncertainties, one per input X
-    :param Y: observed values
+    Based on work of:
+        Titsias, Michalis K. "Variational learning of inducing variables in sparse Gaussian processes." International Conference on Artificial Intelligence and Statistics. 2009.
+
+    When input uncertainty is also present, this becomes the Bayesian GPLVM model, :py:class:`~GPy.models.bayesian_gplvm.BayesianGPLVM`.
+
+    See the following for a more thorough derivation and showing the relationship between these two cases:
+        A. Damianou. (2015) "Deep Gaussian Processes and Variational Propagation of Uncertainty." PhD Thesis, The University of Sheffield.
+
+    :param X: Input observations
+    :type X: np.ndarray (num_data x input_dim)
+    :param Y: Observed output data
+    :type Y: np.ndarray (num_data x output_dim)
     :param kernel: a GPy kernel, defaults to rbf+white
+    :type kernel: :py:class:`~GPy.kern.src.kern.Kern` instance | None
     :param Z: inducing inputs (optional, see note)
     :type Z: np.ndarray (num_inducing x input_dim) | None
-    :param num_inducing: number of inducing points (ignored if Z is passed, see note)
-    :type num_inducing: int
-    :rtype: model object
+    :param int num_inducing: number of inducing points (ignored if Z is passed, see note)
+    :param X_variance: The uncertainty in the measurements of X (Gaussian variance) (optional)
+    :type X_variance: np.ndarray (num_data x input_dim) | None
+    :param normalizer:
+        normalize the outputs Y.
+        Prediction will be un-normalized using this normalizer.
+        If normalizer is None, we will normalize using Standardize.
+        If normalizer is False, no normalization will be done.
+    :type normalizer: True, False, :py:class:`~GPy.util.normalizer._Norm` object
+    :param mpi_comm: The communication group of MPI, e.g. mpi4py.MPI.COMM_WORLD. If None MPI is not used
+    :type mpi_comm: :py:class:`mpi4py.MPI.Intracomm` | None
+    :param str name: Naming given to model
 
     .. Note:: If no Z array is passed, num_inducing (default 10) points are selected from the data. Other wise num_inducing is ignored
+
     .. Note:: Multiple independent outputs are allowed using columns of Y
 
     """

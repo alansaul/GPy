@@ -9,6 +9,17 @@ class PiecewiseLinear(Mapping):
     The parameters of this mapping are the positions and values of the function where it is broken (self.breaks, self.values).
 
     Outside the range of the breaks, the function is assumed to have gradient 1
+
+    :param input_dim: dimension of input.
+    :type input_dim: int
+    :param output_dim: dimension of output.
+    :type output_dim: int
+    :param values: value of function at split
+    :type values: ?
+    :param values: positions that breaks occur to make it piecewise
+    :type values: ?
+    :param name: name of piecewise mapping instance
+    :type name: str
     """
     def __init__(self, input_dim, output_dim, values, breaks, name='piecewise_linear'):
 
@@ -25,6 +36,9 @@ class PiecewiseLinear(Mapping):
         self.link_parameter(self.breaks)
 
     def parameters_changed(self):
+        """
+        When the parameters change of this mapping (the break points and there values) we recalculate the mappings core components
+        """
         self.order = np.argsort(self.breaks)*1
         self.reverse_order = np.zeros_like(self.order)
         self.reverse_order[self.order] = np.arange(self.order.size)
@@ -35,6 +49,12 @@ class PiecewiseLinear(Mapping):
         self.grads = np.diff(self.sorted_values)/np.diff(self.sorted_breaks)
 
     def f(self, X):
+        """
+        The function is the evaluation of the piecewise linear mapping at the specified locations
+
+        :param X: input to mapping function
+        :type X: np.ndarray | float
+        """
         x = X.flatten()
         y = x.copy()
 
@@ -52,6 +72,14 @@ class PiecewiseLinear(Mapping):
         return y.reshape(-1,1)
 
     def update_gradients(self, dL_dF, X):
+        """
+        Update gradients of the mapping to allow the breakpoints and their values to be optimised
+
+        :param dL_dF: derivative of log maginal likelihood wrt the mapping
+        :type dL_dF: np.ndarray | float
+        :param X: input to additive function
+        :type X: np.ndarray | float
+        """
         x = X.flatten()
         dL_dF = dL_dF.flatten()
 
@@ -80,6 +108,22 @@ class PiecewiseLinear(Mapping):
         self.values.gradient = dL_dv[self.reverse_order]
 
     def gradients_X(self, dL_dF, X):
+        """
+        Calculate the gradient contributions to dL_dX arising from the mapping.
+
+        .. math::
+
+            \\frac{\partial L}{\partial F} = \\frac{\partial L}{\partial F}\\frac{\partial F}{\partial X}
+
+        where F is the mapping
+ 
+        :param dL_dF: derivative of log maginal likelihood wrt the mapping
+        :type dL_dF: np.ndarray | float
+        :param X: input to mlp function
+        :type X: np.ndarray | float
+        :returns: gradient contribution to X
+        :rtype: np.ndarray
+        """
         x = X.flatten()
 
         #outside the range of the breakpoints, the function is just offset by a contant, so the partial derivative is 1.

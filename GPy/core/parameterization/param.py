@@ -7,4 +7,5 @@ from paramz.transformations import __fixed__
 import logging, numpy as np
 
 class Param(Param, Priorizable):
+    """ Param object inherited from paramz package, see the documentation in that project for details """
     pass

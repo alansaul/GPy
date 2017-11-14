@@ -4,6 +4,13 @@ from .parameterization.priorizable import Priorizable
 from paramz import Model as ParamzModel
 
 class Model(ParamzModel, Priorizable):
+    """
+    Wrapper around the Model class defined in the paramz package.
+
+    This class is the parent of any model defined in GPy, and ensures that parameters_changed is called when any parameters of the model, or its attached parameterizable objects are updated.
+
+    :param str name: name given to the model instance
+    """
 
     def __init__(self, name):
         super(Model, self).__init__(name)  # Parameterized.__init__(self)
@@ -14,10 +21,24 @@ class Model(ParamzModel, Priorizable):
         return input_dict
 
     def to_dict(self):
+        """
+        Make a dictionary of all the important features of the mapping in order to recreate it at a later date.
+
+        :returns: Dictionary of mapping
+        :rtype: dict
+        """
         raise NotImplementedError
 
     @staticmethod
     def from_dict(input_dict, data=None):
+        """
+        Make a :py:class:`Model` instance from a dictionary containing all the information (usually saved previously with to_dict). Will fail if no data is provided and it is also not in the dictionary.
+
+        :param input_dict: Input dictionary to recreate the model, usually saved previously from to_dict
+        :type input_dict: dict
+        :returns: New :py:class:`Model` instance
+        :rtype: :py:class:`Model`
+        """
         import copy
         input_dict = copy.deepcopy(input_dict)
         model_class = input_dict.pop('class')
@@ -31,6 +52,13 @@ class Model(ParamzModel, Priorizable):
         return model_class(**input_dict)
 
     def save_model(self, output_filename, compress=True, save_data=True):
+        """
+        Save the current model to a output file
+
+        :param str output_filename: String with filename and path
+        :param bool compress: Whether to compress the output file to reduce filesize
+        :param bool save_data: Whether to save the input and output observations, X and Y respectively, to the dict.
+        """
         raise NotImplementedError
 
     def _save_model(self, output_filename, compress=True, save_data=True):
@@ -48,6 +76,13 @@ class Model(ParamzModel, Priorizable):
 
     @staticmethod
     def load_model(output_filename, data=None):
+        """
+        Load a model from a output file that was previously saved using :py:func:`save_model`
+
+        :param str output_filename: String with filename and path
+        :param data: list containing input and output observations, X and Y repsectively.
+        :type data: tuple of X and Y data to be used
+        """
         compress = output_filename.split(".")[-1] == "zip"
         import json
         if compress:
@@ -64,16 +99,22 @@ class Model(ParamzModel, Priorizable):
 
 
     def log_likelihood(self):
+        """
+        The log marginal likelihood of the model, :math:`p(\mathbf{y})`, this is the objective function of the model being optimised
+        """
         raise NotImplementedError("this needs to be implemented to use the model class")
 
     def _log_likelihood_gradients(self):
+        """
+        The gradients of the log marginal likelihood of the model, :math:`\\frac{d p(\mathbf{y})}{d \\theta}`, i.e the objective function of the model being optimised, with respect to any parameters of the model.
+        """
         return self.gradient#.copy()
 
     def objective_function(self):
         """
         The objective function for the given algorithm.
 
-        This function is the true objective, which wants to be minimized.
+        This function is the true objective, which wants to be *minimized*.
         Note that all parameters are already set and in place, so you just need
         to return the objective function here.
 

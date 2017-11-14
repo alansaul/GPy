@@ -14,11 +14,23 @@ from ..kern.src.psi_comp.ssrbf_psi_gpucomp import PSICOMP_SSRBF_GPU
 class IBPPosterior(SpikeAndSlabPosterior):
     '''
     The SpikeAndSlab distribution for variational approximations.
+
+
+    :param means:
+    :type means:
+    :param variances:
+    :type variances:
+    :param binary_prob: the probability of the distribution on the slab part.
+    :type binary_prob:
+    :param tau:
+    :type tau:
+    :param sharedX:
+    :type sharedX:
+    :param name:
+    :type name: str
+
     '''
     def __init__(self, means, variances, binary_prob, tau=None,  sharedX=False, name='latent space'):
-        """
-        binary_prob : the probability of the distribution on the slab part.
-        """
         from paramz.transformations import Logexp
         super(IBPPosterior, self).__init__(means, variances, binary_prob, group_spike=True, name=name)
         self.sharedX = sharedX
@@ -178,13 +190,63 @@ class SSGPLVM(SparseGP_MPI):
     """
     Spike-and-Slab Gaussian Process Latent Variable Model
 
-    :param Y: observed data (np.ndarray) or GPy.likelihood
-    :type Y: np.ndarray| GPy.likelihood instance
-    :param input_dim: latent dimensionality
+    Based on:
+        Dai, Zhenwen, James Hensman, and Neil Lawrence. "Spike and slab gaussian process latent variable models." arXiv preprint arXiv:1505.02434 (2015).
+
+    :param Y: Observed data
+    :type Y: np.ndarray (num_data x output_dim)
+    :param input_dim: Latent dimensionality
     :type input_dim: int
+    :param X: Latent space locations - if specified initialisation such as PCA will be ignored
+    :type X: np.ndarray (num_data x input_dim)
+    :param X_variance: The uncertainty in the measurements of X (Gaussian variance)
+    :type X_variance: np.ndarray (num_data x input_dim) | None
+    :param Gamma: ?
+    :type Gamma: ?
     :param init: initialisation method for the latent space
     :type init: 'PCA'|'random'
-
+    :param num_inducing: Number of inducing points for sparse approximation (optional, default 10. Ignored if Z is not None)
+    :type num_inducing: int
+    :param Z: Inducing input locations - locations of inducing points for sparse approximation - randomly taken from latent means, X, if not specified
+    :type Z: np.ndarray (num_inducing x input_dim) | None
+    :param kernel: the kernel (covariance function). See link kernels. RBF used if not specified
+    :type kernel: :py:class:`~GPy.kern.src.kern.Kern` instance | None
+    :param inference_method: Inference method used. Variational inference method as in the original paper used if not specified.
+    :type inference_method: :py:class:`~GPy.inference.latent_function_inference.LatentFunctionInference` | None
+    :param likelihood: Likelihood instance for observed data, default is :py:class:`GPy.likelihoods.gaussian.Gaussian`. An appropriate different inference method must be specified (and implemented) if Gaussian is not used.
+    :type likelihood: :py:class:`~GPy.likelihoods.likelihood.Likelihood` | None
+    :param name: Naming given to model
+    :type name: str
+    :param group_spike: ?
+    :type group_spike: ?
+    :param IBP: ?
+    :type IBP: bool
+    :param SLVM: ?
+    :type SLVM: bool
+    :param alpha: ?
+    :type alpha: float
+    :param beta:?
+    :type beta: float
+    :param connM: ?
+    :type connM: ?
+    :param tau: ?
+    :type tau: ?
+    :param mpi_comm: The communication group of MPI, e.g. mpi4py.MPI.COMM_WORLD. If None MPI is not used
+    :type mpi_comm: :py:class:`mpi4py.MPI.Intracomm` | None
+    :param pi: ?
+    :type pi: ?
+    :param learnPi: ?
+    :type learnPi: ?
+    :param normalizer:
+        normalize the outputs Y.
+        Prediction will be un-normalized using this normalizer.
+        If normalizer is None, we will normalize using Standardize.
+        If normalizer is False, no normalization will be done.
+    :type normalizer: True, False, :py:class:`~GPy.util.normalizer._Norm` object
+    :param sharedX: ?
+    :type sharedX: bool
+    :param variational_prior: ?
+    :type variational_prior: ?
     """
     def __init__(self, Y, input_dim, X=None, X_variance=None, Gamma=None, init='PCA', num_inducing=10,
                  Z=None, kernel=None, inference_method=None, likelihood=None, name='Spike_and_Slab GPLVM', group_spike=False, IBP=False,SLVM=False, alpha=2., beta=2., connM=None, tau=None, mpi_comm=None, pi=None, learnPi=False,normalizer=False, sharedX=False, variational_prior=None,**kwargs):
@@ -303,8 +365,3 @@ class SSGPLVM(SparseGP_MPI):
             return Ws
         else:
             return Ws.mean(0), Ws.std(0)
-
-        
-        
-
-        

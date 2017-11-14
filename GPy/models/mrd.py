@@ -16,7 +16,12 @@ from ..models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
 
 class MRD(BayesianGPLVMMiniBatch):
     """
-    !WARNING: This is bleeding edge code and still in development.
+    Manifold relevance determination model.
+
+    Based on the following work:
+        A. Damianou, C. H. Ek, M. K. Titsias and N. D. Lawrence. (2012) "Manifold Relevance Determination." International Conference on Machine Learning (ICML).
+
+    .. warning:: This is bleeding edge code and still in development.
     Functionality may change fundamentally during development!
 
     Apply MRD to all given datasets Y in Ylist.
@@ -46,10 +51,11 @@ class MRD(BayesianGPLVMMiniBatch):
     :param num_inducing: number of inducing inputs to use
     :param Z: initial inducing inputs
     :param kernel: list of kernels or kernel to copy for each output
-    :type kernel: [GPy.kernels.kernels] | GPy.kernels.kernels | None (default)
-    :param :class:`~GPy.inference.latent_function_inference inference_method:
-        InferenceMethodList of inferences, or one inference method for all
-    :param :class:`~GPy.likelihoodss.likelihoods.likelihoods` likelihoods: the likelihoods to use
+    :type kernel: list(:py:class:`~GPy.kern.src.kern.Kern`) | :py:class:`~GPy.kern.src.kern.Kern` | None (default)
+    :param inference_method: InferenceMethodList of inferences, or one inference method for all
+    :type inference_method: :py:class:`~GPy.inference.latent_function_inference.InferenceMethodList` | None
+    :param likelihood: List of likelihood instances for observed data, default is iid GPy.likelihood.Gaussian for each.
+    :type likelihood: list(:py:class:`~GPy.likelihoods.likelihood.Likelihood`) | None
     :param str name: the name of this model
     :param [str] Ynames: the names for the datasets given, must be of equal length as Ylist or None
     :param bool|Norm normalizer: How to normalize the data?
@@ -185,6 +191,11 @@ class MRD(BayesianGPLVMMiniBatch):
         #    pass
 
     def log_likelihood(self):
+        """
+        Return the log marginal likelihood
+
+        :rtype: float
+        """
         return self._log_marginal_likelihood
 
     def _init_X(self, init='PCA', Ylist=None):
@@ -219,6 +230,19 @@ class MRD(BayesianGPLVMMiniBatch):
         """
         Prediction for data set Yindex[default=0].
         This predicts the output mean and variance for the dataset given in Ylist[Yindex]
+
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray (Nnew x self.input_dim)
+        :param full_cov: whether to return the full covariance matrix, or just
+                         the diagonal
+        :type full_cov: bool
+        :param Y_metadata: Metadata about the predicting point to pass to the likelihood
+        :type Y_metadata: dict | None
+        :param kern: The kernel to use for prediction (defaults to the model
+                     kern). this is useful for examining e.g. subprocesses.
+        :type kern: :py:class:`GPy.kern.src.kern.Kern` | None
+        :param Yindex: index of dataset to use
+        :type Yindex: int
         """
         b = self.bgplvms[Yindex]
         self.posterior = b.posterior
@@ -242,6 +266,7 @@ class MRD(BayesianGPLVMMiniBatch):
         significant for which dataset.
 
         :param titles: titles for axes of datasets
+        :type titles: list(str)
 
         kwargs go into plot_ARD for each kernel.
         """

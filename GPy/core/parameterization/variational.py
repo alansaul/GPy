@@ -1,8 +1,5 @@
-'''
-Created on 6 Nov 2013
-
-@author: maxz
-'''
+# Copyright (c) 2012 - 2017, GPy authors (see AUTHORS.txt).
+# Licensed under the BSD 3-clause license (see LICENSE.txt)
 
 import numpy as np
 from .parameterized import Parameterized
@@ -10,28 +7,80 @@ from .param import Param
 from paramz.transformations import Logexp, Logistic,__fixed__
 
 class VariationalPrior(Parameterized):
+    """
+    VariationalPrior base class. Represents a prior distribution that has a KL with a variational posterior object defined, and gradients wrt its variational parameters.
+
+    :param str name: Name of distribution instance
+    """
+
     def __init__(self, name='latent prior', **kw):
         super(VariationalPrior, self).__init__(name=name, **kw)
 
     def KL_divergence(self, variational_posterior):
+        """
+        KL divergence between the variational prior distribution and a variational posterior distribution.
+
+        .. math::
+            KL[q(\mathbf{x}|\mathbf{y}, \\theta_{V})||p(\mathbf{X})]
+
+        .. Note::
+            Notation :math:`q(\mathbf{x}|\mathbf{y})` is used to signify a variational posterior distribution, which has been implicitly learnt to encode the dependence on the observed data.
+        """
         raise NotImplementedError("override this for variational inference of latent space")
 
     def update_gradients_KL(self, variational_posterior):
         """
-        updates the gradients for mean and variance **in place**
+        Updates the gradients for mean and variance **in place**
+
+        .. math::
+            \frac{d KL[q(\mathbf{x}|\mathbf{y})||p(\mathbf{X})]}{d \\theta_{V}}
+
+        :param variational_posterior: The variational posterior distribution to update the gradients of using the KL between the current variational prior, and the given variational posterior distribution.
+        :type variational_posterior: `~VariationalPosterior`
         """
         raise NotImplementedError("override this for variational inference of latent space")
 
 class NormalPrior(VariationalPrior):
+    """
+    Variational normal prior
+ 
+    .. math::
+        p(\mathbf{X}) \sim N(\mathbf{0}, \mathbf{\eye})
+
+    :param str name: Name of normal prior instance
+    """
     def __init__(self, name='normal_prior', **kw):
         super(VariationalPrior, self).__init__(name=name, **kw)
 
     def KL_divergence(self, variational_posterior):
+        """
+        KL divergence between the variational prior distribution and a variational posterior distribution.
+
+        .. math::
+            KL[q(\mathbf{x}|\mathbf{y}, \\theta_{V})||p(\mathbf{X})]
+
+        .. Note::
+            Notation :math:`q(\mathbf{x}|\mathbf{y})` is used to signify a variational posterior distribution, which has been implicitly learnt to encode the dependence on the observed data.
+
+        :param variational_posterior: variational posterior to compute the KL with
+        :type variational_posterior: `VariationalPosterior`
+        :returns: KL_q_p
+        :rtype: float
+        """
         var_mean = np.square(variational_posterior.mean).sum()
         var_S = (variational_posterior.variance - np.log(variational_posterior.variance)).sum()
         return 0.5 * (var_mean + var_S) - 0.5 * variational_posterior.input_dim * variational_posterior.num_data
 
     def update_gradients_KL(self, variational_posterior):
+        """
+        Updates the gradients for mean and variance **in place**
+
+        .. math::
+            \frac{d KL[q(\mathbf{x}|\mathbf{y})||p(\mathbf{X})]}{d \\theta_{V}}
+
+        :param variational_posterior: The variational posterior distribution to update the gradients of using the KL between the current variational prior, and the given variational posterior distribution.
+        :type variational_posterior: `~VariationalPosterior`
+        """
         # dL:
         variational_posterior.mean.gradient -= variational_posterior.mean
         variational_posterior.variance.gradient -= (1. - (1. / (variational_posterior.variance))) * 0.5
@@ -48,8 +97,21 @@ class SpikeAndSlabPrior(VariationalPrior):
             self.pi = Param('Pi', pi, __fixed__)
         self.link_parameter(self.pi)
 
-
     def KL_divergence(self, variational_posterior):
+        """
+        KL divergence between the variational prior distribution and a variational posterior distribution.
+
+        .. math::
+            KL[q(\mathbf{x}|\mathbf{y}, \\theta_{V})||p(\mathbf{X})]
+
+        .. Note::
+            Notation :math:`q(\mathbf{x}|\mathbf{y})` is used to signify a variational posterior distribution, which has been implicitly learnt to encode the dependence on the observed data.
+
+        :param variational_posterior: variational posterior to compute the KL with
+        :type variational_posterior: `VariationalPosterior`
+        :returns: KL_q_p
+        :rtype: float
+        """
         mu = variational_posterior.mean
         S = variational_posterior.variance
         if self.group_spike:
@@ -68,6 +130,15 @@ class SpikeAndSlabPrior(VariationalPrior):
         return var_gamma+ (gamma* (np.log(self.variance)-1. +var_mean + var_S)).sum()/2.
 
     def update_gradients_KL(self, variational_posterior):
+        """
+        Updates the gradients for mean and variance **in place**
+
+        .. math::
+            \frac{d KL[q(\mathbf{x}|\mathbf{y})||p(\mathbf{X})]}{d \\theta_{V}}
+
+        :param variational_posterior: The variational posterior distribution to update the gradients of using the KL between the current variational prior, and the given variational posterior distribution.
+        :type variational_posterior: `~VariationalPosterior`
+        """
         mu = variational_posterior.mean
         S = variational_posterior.variance
         if self.group_spike:
@@ -96,6 +167,15 @@ class SpikeAndSlabPrior(VariationalPrior):
                 self.pi[idx].gradient = (gamma/self.pi[idx] - (1.-gamma)/(1.-self.pi[idx]))
 
 class VariationalPosterior(Parameterized):
+    """
+    Variational posterior base class, Represents a parameterized variational distribution, with some variational parameters that typically need to be optimised.
+
+    :param means: vector of variational mean parameters for each input
+    :type means: np.ndarray (num_data x input_dim)
+    :param variances: vector of variational variance parameters for each input location
+    :type variances: np.ndarray (num_data x input_dim)
+    :param str name: Name given to variational posterior instance
+    """
     def __init__(self, means=None, variances=None, name='latent space', *a, **kw):
         super(VariationalPosterior, self).__init__(name=name, *a, **kw)
         self.mean = Param("mean", means)
@@ -109,6 +189,12 @@ class VariationalPosterior(Parameterized):
             assert self.variance.shape == self.mean.shape, "need one variance per sample and dimenion"
 
     def set_gradients(self, grad):
+        """
+        Given the gradient of the model wrt the variational mean and variance parameters, set the parameters gradient.
+
+        :param grad: derivative of log marginal likelihood wrt variational parameters dthetaV, dL_dthetaV
+        :type grad: tuple(np.ndarray (num_data x input_dim), np.ndarray(num_data x input_dim))
+        """
         self.mean.gradient, self.variance.gradient = grad
 
     def _raveled_index(self):
@@ -120,6 +206,9 @@ class VariationalPosterior(Parameterized):
         return index
 
     def has_uncertain_inputs(self):
+        """
+        Check if there is uncertain inputs for the variational posterior distribution, or whether it they are defined as None (no uncertainty)
+        """
         return not self.variance is None
 
     def __getitem__(self, s):
@@ -146,9 +235,18 @@ class VariationalPosterior(Parameterized):
 
 class NormalPosterior(VariationalPosterior):
     '''
-    NormalPosterior distribution for variational approximations.
+    NormalPosterior distribution for variational approximations that are Gaussian.
 
-    holds the means and variances for a factorizing multivariate normal distribution
+    Represents a factorized multivariate Gaussian variational distribution, with some variational mean and variational variance parameters that typically need to be optimised.
+
+    .. math::
+        q(\mathbf{X}|\mathbf{Y}, \mathbf{\\mu}_{V}, \mathbf{v}_{V}) \sim N(\mathbf{\\mu}_{V}, \mathbf{v}_{V}\mathbf{\eye})
+
+    :param means: vector of variational mean parameters for each input
+    :type means: np.ndarray (num_data x input_dim)
+    :param variances: vector of variational variance parameters for each input location
+    :type variances: np.ndarray (num_data x input_dim)
+    :param str name: Name given to variational normal instance
     '''
 
     def plot(self, *args, **kwargs):
@@ -163,7 +261,11 @@ class NormalPosterior(VariationalPosterior):
         return variational_plots.plot(self, *args, **kwargs)
 
     def KL(self, other):
-        """Compute the KL divergence to another NormalPosterior Object. This only holds, if the two NormalPosterior objects have the same shape, as we do computational tricks for the multivariate normal KL divergence.
+        """
+        Compute the KL divergence to another NormalPosterior Object. This only holds, if the two NormalPosterior objects have the same shape, as we do computational tricks for the multivariate normal KL divergence.
+
+        :returns: KL_q_q
+        :rtype: float
         """
         return .5*(
             np.sum(self.variance/other.variance)
@@ -175,11 +277,22 @@ class NormalPosterior(VariationalPosterior):
 class SpikeAndSlabPosterior(VariationalPosterior):
     '''
     The SpikeAndSlab distribution for variational approximations.
+
+    .. math::
+        q(\mathbf{b} | \mathbf{\\gamma}) = \prod_{q=1} \\gamma^{b_{q}}_{q}(1-\\gamma_{q})^{(1-\mathbf{b}_{q})}
+        q(\mathbf{X}|\mathbf{b} = 1) = N(mathbf{X}|\mathbf{\\mu}_{V}, \mathbf{s}_{V})
+
+    :param means: vector of variational mean parameters for each input
+    :type means: np.ndarray (num_data x input_dim)
+    :param variances: vector of variational variance parameters for each input location
+    :type variances: np.ndarray (num_data x input_dim)
+    :param binary_prob: the probability of the distribution on the slab part.
+    :type binary_prob: ?
+    :param bool group_spike: ?
+    :param bool sharedX: ?
+    :param str name: Name given to variational normal instance
     '''
     def __init__(self, means, variances, binary_prob, group_spike=False, sharedX=False, name='latent space'):
-        """
-        binary_prob : the probability of the distribution on the slab part.
-        """
         super(SpikeAndSlabPosterior, self).__init__(means, variances, name)
         self.group_spike = group_spike
         self.sharedX = sharedX
@@ -203,6 +316,12 @@ class SpikeAndSlabPosterior(VariationalPosterior):
             self.gamma_group.gradient = self.gamma.gradient.reshape(self.gamma.shape).sum(axis=0)
 
     def set_gradients(self, grad):
+        """
+        Given the gradient of the model wrt the variational mean, variance and gamma parameters, set the parameters gradient.
+
+        :param grad: derivative of log marginal likelihood wrt variational parameters dthetaV, dL_dthetaV
+        :type grad: tuple(np.ndarray (num_data x input_dim), np.ndarray(num_data x input_dim), np.ndarray(num_data x input_dim))
+        """
         self.mean.gradient, self.variance.gradient, self.gamma.gradient = grad
 
     def __getitem__(self, s):

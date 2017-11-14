@@ -11,6 +11,8 @@ class SparseGPCoregionalizedRegression(SparseGP):
     """
     Sparse Gaussian Process model for heteroscedastic multioutput regression
 
+    This model allows multiple outputs to be considered, with different likelihood noises to be added to each output, all using a sparse approximation to allow the method to scale to larger datasets.
+
     This is a thin wrapper around the SparseGP class, with a set of sensible defaults
 
     :param X_list: list of input observations corresponding to each output
@@ -20,18 +22,14 @@ class SparseGPCoregionalizedRegression(SparseGP):
     :param Z_list: list of inducing inputs (optional)
     :type Z_list: empty list | list of numpy arrays
     :param kernel: a GPy kernel ** Coregionalized, defaults to RBF ** Coregionalized
-    :type kernel: None | GPy.kernel defaults
+    :type kernel: None | :py:class:`~GPy.kern.src.kern.Kern` defaults
     :likelihoods_list: a list of likelihoods, defaults to list of Gaussian likelihoods
-    :type likelihoods_list: None | a list GPy.likelihoods
+    :type likelihoods_list: None | list(py:class:`~GPy.likelihoods.likelihood.Likelihood`)
     :param num_inducing: number of inducing inputs, defaults to 10 per output (ignored if Z_list is not empty)
-    :type num_inducing: integer | list of integers
-
-    :param name: model name
-    :type name: string
-    :param W_rank: number tuples of the corregionalization parameters 'W' (see coregionalize kernel documentation)
-    :type W_rank: integer
-    :param kernel_name: name of the kernel
-    :type kernel_name: string
+    :type num_inducing: integer | list(int)
+    :param str name: model name
+    :param int W_rank: number tuples of the corregionalization parameters 'W' (see coregionalize kernel documentation)
+    :param str kernel_name: name of the kernel
     """
 
     def __init__(self, X_list, Y_list, Z_list=[], kernel=None, likelihoods_list=None, num_inducing=10, X_variance=None, name='SGPCR',W_rank=1,kernel_name='coreg'):

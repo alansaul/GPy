@@ -7,9 +7,21 @@ from ..core import Param
 
 class MLP(Mapping):
     """
-    Mapping based on a multi-layer perceptron neural network model, with a single hidden layer
-    """
+    Mapping based on a multi-layer perceptron neural network model, with a single hidden layer.
 
+    .. math::
+
+       F(\mathbf{X}) = \\tanh(\\tanh(\mathbf{X}\mathbf{W}_{1} + \mathbf{b}_1)\mathbf{W}_{2} + \mathbf{b}_{2})
+
+    :param input_dim: dimension of input.
+    :type input_dim: int
+    :param output_dim: dimension of output.
+    :type output_dim: int
+    :param hidden_dim: number of hidden 'neurons'
+    :type hidden_dim: int
+    :param name: name of mlp mapping instance
+    :type name: str
+    """
     def __init__(self, input_dim=1, output_dim=1, hidden_dim=3, name='mlpmap'):
         super(MLP, self).__init__(input_dim=input_dim, output_dim=output_dim, name=name)
         self.hidden_dim = hidden_dim
@@ -19,13 +31,26 @@ class MLP(Mapping):
         self.b2 = Param('b2', np.random.randn(self.output_dim))
         self.link_parameters(self.W1, self.b1, self.W2, self.b2)
 
-
     def f(self, X):
+        """
+        The function is the evaluation of the MLP using the current weights and offsets
+
+        :param X: input to mapping function
+        :type X: np.ndarray | float
+        """
         layer1 = np.dot(X, self.W1) + self.b1
         activations = np.tanh(layer1)
         return  np.dot(activations, self.W2) + self.b2
 
     def update_gradients(self, dL_dF, X):
+        """
+        Update gradients of the mapping (back-propagation) to learn mapping weights and offsets of neurons
+
+        :param dL_dF: derivative of log maginal likelihood wrt the mapping
+        :type dL_dF: np.ndarray | float
+        :param X: input to additive function
+        :type X: np.ndarray | float
+        """
         layer1 = np.dot(X,self.W1) + self.b1
         activations = np.tanh(layer1)
 
@@ -42,6 +67,22 @@ class MLP(Mapping):
         self.b1.gradient = np.sum(dL_dlayer1, 0)
 
     def gradients_X(self, dL_dF, X):
+        """
+        Calculate the gradient contributions to dL_dX arising from the mapping.
+
+        .. math::
+
+            \\frac{\partial L}{\partial F} = \\frac{\partial L}{\partial F}\\frac{\partial F}{\partial X}
+
+        where F is the mapping
+ 
+        :param dL_dF: derivative of log maginal likelihood wrt the mapping
+        :type dL_dF: np.ndarray | float
+        :param X: input to mlp function
+        :type X: np.ndarray | float
+        :returns: gradient contribution to X
+        :rtype: np.ndarray
+        """
         layer1 = np.dot(X,self.W1) + self.b1
         activations = np.tanh(layer1)
 
@@ -50,6 +91,3 @@ class MLP(Mapping):
         dL_dlayer1 = dL_dact * (1 - np.square(activations))
 
         return np.dot(dL_dlayer1, self.W1.T)
-
-
-

@@ -16,7 +16,11 @@ class GPMultioutRegressionMD(SparseGP):
     """
     Gaussian Process model for scalable multioutput regression
 
+    Based on:
+        Dai, Zhenwen, Mauricio A. Alvarez, and Neil D. Lawrence. "Efficient Modeling of Latent Information in Supervised Learning using Gaussian Processes." arXiv preprint arXiv:1705.09862 (2017).
+
     This is a thin wrapper around the models.GP class, with a set of sensible defaults
+
     """
     def __init__(self, X, Y, indexD, Xr_dim, kernel=None, kernel_row=None, likelihood=None, Z=None, Z_row=None, X_row=None, Xvariance_row=None, num_inducing=(10,10), qU_var_r_W_dim=None, qU_var_c_W_dim=None, init='GP', heter_noise=False, name='GPMR'):
 
@@ -163,6 +167,15 @@ class GPMultioutRegressionMD(SparseGP):
         self.variational_prior_row.update_gradients_KL(self.X_row)
 
     def optimize_auto(self,max_iters=10000,verbose=True):
+        """
+        An heuristic method by which to optimise the model, first learning variational parameters with other parameters fixed,
+        then training everything together once a suitable mode has been found
+
+        :param max_iters: Maximum iterations to use for the full optimisation. Variational parameters will be optimised max_iter/10 iterations before everything is unfixed
+        :type max_iters: int
+        :param verbose: Whether to be verbose with information of ongoing optimisation
+        :type verbose: bool
+        """
         self.Z.fix(warning=False)
         self.kern.fix(warning=False)
         self.kern_row.fix(warning=False)

@@ -4,6 +4,7 @@
 import numpy as np
 from scipy.special import cbrt
 from .config import *
+from functools import wraps
 
 _lim_val = np.finfo(np.float64).max
 _lim_val_exp = np.log(_lim_val)
@@ -136,7 +137,9 @@ def param_to_array(*param):
         return param[0].view(np.ndarray)
     return [x.view(np.ndarray) for x in param]
 
+
 def blockify_hessian(func):
+    @wraps(func)
     def wrapper_func(self, *args, **kwargs):
         # Invoke the wrapped function first
         retval = func(self, *args, **kwargs)
@@ -148,6 +151,7 @@ def blockify_hessian(func):
     return wrapper_func
 
 def blockify_third(func):
+    @wraps(func)
     def wrapper_func(self, *args, **kwargs):
         # Invoke the wrapped function first
         retval = func(self, *args, **kwargs)
@@ -163,6 +167,7 @@ def blockify_third(func):
     return wrapper_func
 
 def blockify_dhess_dtheta(func):
+    @wraps(func)
     def wrapper_func(self, *args, **kwargs):
         # Invoke the wrapped function first
         retval = func(self, *args, **kwargs)

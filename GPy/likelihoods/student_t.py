@@ -18,9 +18,22 @@ class StudentT(Likelihood):
 
     For nomanclature see Bayesian Data Analysis 2003 p576
 
+    This likelihood is usually used when heavier tails than the standard Gaussian likelihood is required.This requirement often arises when outlying observations are observed.
+
     .. math::
         p(y_{i}|\\lambda(f_{i})) = \\frac{\\Gamma\\left(\\frac{v+1}{2}\\right)}{\\Gamma\\left(\\frac{v}{2}\\right)\\sqrt{v\\pi\\sigma^{2}}}\\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - f_{i})^{2}}{\\sigma^{2}}\\right)\\right)^{\\frac{-v+1}{2}}
 
+    :param gp_link: transformation function, default is Identity (don't transform the function)
+    :type gp_link: :py:class:`~GPy.likelihoods.link_functions.GPTransformation`
+    :param deg_free: degrees of freedom of the StudentT distribution, i.e. smaller means heavier tails
+    :type deg_free: float
+    :param sigma2: variance value of the StudentT distribution
+    :type sigma2: float
+    :param name: name given to likelihood instance
+    :type name: str
+
+    .. Note:
+        Variance is infinite when 1<deg_free<2 and undefined when below 1
     """
     def __init__(self,gp_link=None, deg_free=5, sigma2=2):
         if gp_link is None:
@@ -38,8 +51,10 @@ class StudentT(Likelihood):
 
     def update_gradients(self, grads):
         """
-        Pull out the gradients, be careful as the order must match the order
-        in which the parameters are added
+        Given the gradient of the model wrt the variance parameter and deg_free parameter, set the parameters gradient.
+
+        :param grad: dL_dsigma2
+        :type grad: float
         """
         self.sigma2.gradient = grads[0]
         self.v.gradient = grads[1]
@@ -51,13 +66,14 @@ class StudentT(Likelihood):
         .. math::
             p(y_{i}|\\lambda(f_{i})) = \\frac{\\Gamma\\left(\\frac{v+1}{2}\\right)}{\\Gamma\\left(\\frac{v}{2}\\right)\\sqrt{v\\pi\\sigma^{2}}}\\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - \\lambda(f_{i}))^{2}}{\\sigma^{2}}\\right)\\right)^{\\frac{-v+1}{2}}
 
-        :param inv_link_f: latent variables link(f)
-        :type inv_link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in student t distribution
+        :param inv_link_f: latent variables inv_link(f)
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
         :returns: likelihood evaluated for this point
-        :rtype: float
+        :rtype: np.ndarray(num_data x output_dim)
         """
         assert np.atleast_1d(inv_link_f).shape == np.atleast_1d(y).shape
         e = y - inv_link_f
@@ -75,14 +91,14 @@ class StudentT(Likelihood):
         .. math::
             \\ln p(y_{i}|\lambda(f_{i})) = \\ln \\Gamma\\left(\\frac{v+1}{2}\\right) - \\ln \\Gamma\\left(\\frac{v}{2}\\right) - \\ln \\sqrt{v \\pi\\sigma^{2}} - \\frac{v+1}{2}\\ln \\left(1 + \\frac{1}{v}\\left(\\frac{(y_{i} - \lambda(f_{i}))^{2}}{\\sigma^{2}}\\right)\\right)
 
-        :param inv_link_f: latent variables (link(f))
-        :type inv_link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in student t distribution
-        :returns: likelihood evaluated for this point
-        :rtype: float
-
+        :param inv_link_f: latent variables inv_link(f)
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: log likelihood evaluated for this point
+        :rtype: np.ndarray(num_data x output_dim)
         """
         e = y - inv_link_f
         #FIXME:
@@ -103,14 +119,14 @@ class StudentT(Likelihood):
         .. math::
             \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\lambda(f)} = \\frac{(v+1)(y_{i}-\lambda(f_{i}))}{(y_{i}-\lambda(f_{i}))^{2} + \\sigma^{2}v}
 
-        :param inv_link_f: latent variables (f)
-        :type inv_link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in student t distribution
-        :returns: gradient of likelihood evaluated at points
-        :rtype: Nx1 array
-
+        :param inv_link_f: latent variables inv_link(f)
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: gradient of log likelihood evaluated at points link(f)
+        :rtype: np.ndarray(num_data x output_dim)
         """
         e = y - inv_link_f
         grad = ((self.v + 1) * e) / (self.v * self.sigma2 + (e**2))
@@ -126,12 +142,13 @@ class StudentT(Likelihood):
             \\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}\\lambda(f)} = \\frac{(v+1)((y_{i}-\lambda(f_{i}))^{2} - \\sigma^{2}v)}{((y_{i}-\lambda(f_{i}))^{2} + \\sigma^{2}v)^{2}}
 
         :param inv_link_f: latent variables inv_link(f)
-        :type inv_link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in student t distribution
-        :returns: Diagonal of hessian matrix (second derivative of likelihood evaluated at points f)
-        :rtype: Nx1 array
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points link(f))
+        :rtype: np.ndarray(num_data x output_dim)
 
         .. Note::
             Will return diagonal of hessian, since every where else it is 0, as the likelihood factorizes over cases
@@ -148,13 +165,14 @@ class StudentT(Likelihood):
         .. math::
             \\frac{d^{3} \\ln p(y_{i}|\lambda(f_{i}))}{d^{3}\\lambda(f)} = \\frac{-2(v+1)((y_{i} - \lambda(f_{i}))^3 - 3(y_{i} - \lambda(f_{i})) \\sigma^{2} v))}{((y_{i} - \lambda(f_{i})) + \\sigma^{2} v)^3}
 
-        :param inv_link_f: latent variables link(f)
-        :type inv_link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in student t distribution
-        :returns: third derivative of likelihood evaluated at points f
-        :rtype: Nx1 array
+        :param inv_link_f: latent variables inv_link(f)
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: third derivative of log likelihood evaluated at points link(f)
+        :rtype: np.ndarray(num_data x output_dim)
         """
         e = y - inv_link_f
         d3lik_dlink3 = ( -(2*(self.v + 1)*(-e)*(e**2 - 3*self.v*self.sigma2)) /
@@ -164,18 +182,19 @@ class StudentT(Likelihood):
 
     def dlogpdf_link_dvar(self, inv_link_f, y, Y_metadata=None):
         """
-        Gradient of the log-likelihood function at y given f, w.r.t variance parameter (t_noise)
+        Gradient of the log-likelihood function at y given f, w.r.t variance parameter (sigma2)
 
         .. math::
             \\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{d\\sigma^{2}} = \\frac{v((y_{i} - \lambda(f_{i}))^{2} - \\sigma^{2})}{2\\sigma^{2}(\\sigma^{2}v + (y_{i} - \lambda(f_{i}))^{2})}
 
-        :param inv_link_f: latent variables link(f)
-        :type inv_link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in student t distribution
-        :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
-        :rtype: float
+        :param inv_link_f: latent variables inv_link(f)
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: derivative of log likelihood evaluated at points link(f) w.r.t variance parameter
+        :rtype: np.ndarray(num_data x output_dim)
         """
         e = y - inv_link_f
         e2 = np.square(e)
@@ -184,18 +203,19 @@ class StudentT(Likelihood):
 
     def dlogpdf_dlink_dvar(self, inv_link_f, y, Y_metadata=None):
         """
-        Derivative of the dlogpdf_dlink w.r.t variance parameter (t_noise)
+        Derivative of the dlogpdf_dlink w.r.t variance parameter (sigma2)
 
         .. math::
             \\frac{d}{d\\sigma^{2}}(\\frac{d \\ln p(y_{i}|\lambda(f_{i}))}{df}) = \\frac{-2\\sigma v(v + 1)(y_{i}-\lambda(f_{i}))}{(y_{i}-\lambda(f_{i}))^2 + \\sigma^2 v)^2}
 
-        :param inv_link_f: latent variables inv_link_f
-        :type inv_link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in student t distribution
-        :returns: derivative of likelihood evaluated at points f w.r.t variance parameter
-        :rtype: Nx1 array
+        :param inv_link_f: latent variables inv_link(f)
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: derivative of log likelihood evaluated at points link(f) w.r.t variance parameter
+        :rtype: np.ndarray(num_data x output_dim)
         """
         e = y - inv_link_f
         dlogpdf_dlink_dvar = (self.v*(self.v+1)*(-e))/((self.sigma2*self.v + e**2)**2)
@@ -203,18 +223,19 @@ class StudentT(Likelihood):
 
     def d2logpdf_dlink2_dvar(self, inv_link_f, y, Y_metadata=None):
         """
-        Gradient of the hessian (d2logpdf_dlink2) w.r.t variance parameter (t_noise)
+        Gradient of the hessian (d2logpdf_dlink2) w.r.t variance parameter (sigma2)
 
         .. math::
             \\frac{d}{d\\sigma^{2}}(\\frac{d^{2} \\ln p(y_{i}|\lambda(f_{i}))}{d^{2}f}) = \\frac{v(v+1)(\\sigma^{2}v - 3(y_{i} - \lambda(f_{i}))^{2})}{(\\sigma^{2}v + (y_{i} - \lambda(f_{i}))^{2})^{3}}
 
-        :param inv_link_f: latent variables link(f)
-        :type inv_link_f: Nx1 array
-        :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in student t distribution
-        :returns: derivative of hessian evaluated at points f and f_j w.r.t variance parameter
-        :rtype: Nx1 array
+        :param inv_link_f: latent variables inv_link(f)
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: derivative of log hessian evaluated at points link(f_i) and link(f_j) w.r.t variance parameter
+        :rtype: np.ndarray(num_data x output_dim)
         """
         e = y - inv_link_f
         d2logpdf_dlink2_dvar = ( (self.v*(self.v+1)*(self.sigma2*self.v - 3*(e**2)))
@@ -223,6 +244,18 @@ class StudentT(Likelihood):
         return d2logpdf_dlink2_dvar
 
     def dlogpdf_link_dv(self, inv_link_f, y, Y_metadata=None):
+        """
+        Gradient of the log-likelihood function at y given f, w.r.t v parameter (deg_free)
+
+        :param inv_link_f: latent variables inv_link(f)
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: derivative of log likelihood evaluated at points link(f) w.r.t v parameter
+        :rtype: np.ndarray(num_data x output_dim)
+        """
         e = y - inv_link_f
         e2 = np.square(e)
         df = float(self.v[:])
@@ -233,6 +266,18 @@ class StudentT(Likelihood):
         return dlogpdf_dv
 
     def dlogpdf_dlink_dv(self, inv_link_f, y, Y_metadata=None):
+        """
+        Derivative of the dlogpdf_dlink w.r.t v parameter (deg_free)
+
+        :param inv_link_f: latent variables inv_link(f)
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: derivative of log likelihood evaluated at points link(f) w.r.t v parameter
+        :rtype: np.ndarray(num_data x output_dim)
+        """
         e = y - inv_link_f
         e2 = np.square(e)
         df = float(self.v[:])
@@ -241,6 +286,18 @@ class StudentT(Likelihood):
         return dlogpdf_df_dv
 
     def d2logpdf_dlink2_dv(self, inv_link_f, y, Y_metadata=None):
+        """
+        Gradient of the hessian (d2logpdf_dlink2) w.r.t v parameter (deg_free)
+
+        :param inv_link_f: latent variables inv_link(f)
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: derivative of log hessian evaluated at points link(f_i) and link(f_j) w.r.t v parameter
+        :rtype: np.ndarray(num_data x output_dim)
+        """
         e = y - inv_link_f
         e2 = np.square(e)
         df = float(self.v[:])
@@ -250,41 +307,129 @@ class StudentT(Likelihood):
         return d2logpdf_df2_dv
 
     def dlogpdf_link_dtheta(self, f, y, Y_metadata=None):
+        """
+        Wrapper to ensure we have gradients for every parameter (for student T this is both the variance parameter and de_free parameter)
+
+        :param f: latent variables f
+        :type f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: dL_dthetas
+        :rtype: np.ndarray (num_params x num_data x output_dim)
+        """
         dlogpdf_dvar = self.dlogpdf_link_dvar(f, y, Y_metadata=Y_metadata)
         dlogpdf_dv = self.dlogpdf_link_dv(f, y, Y_metadata=Y_metadata)
         return np.array((dlogpdf_dvar, dlogpdf_dv))
 
     def dlogpdf_dlink_dtheta(self, f, y, Y_metadata=None):
+        """
+        Wrapper to ensure we have gradients for every parameter (for student T this is both the variance parameter and de_free parameter)
+
+        :param f: latent variables f
+        :type f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: dL_dthetas
+        :rtype: np.ndarray (num_params x num_data x output_dim)
+        """
         dlogpdf_dlink_dvar = self.dlogpdf_dlink_dvar(f, y, Y_metadata=Y_metadata)
         dlogpdf_dlink_dv = self.dlogpdf_dlink_dv(f, y, Y_metadata=Y_metadata)
         return np.array((dlogpdf_dlink_dvar, dlogpdf_dlink_dv))
 
     def d2logpdf_dlink2_dtheta(self, f, y, Y_metadata=None):
+        """
+        Wrapper to ensure we have gradients for every parameter (for student T this is both the variance parameter and de_free parameter)
+
+        :param f: latent variables link of f.
+        :type f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type y_metadata: dict
+        :returns: dl_dthetas
+        :rtype: np.ndarray (num_params x num_data x output_dim)
+        """
         d2logpdf_dlink2_dvar = self.d2logpdf_dlink2_dvar(f, y, Y_metadata=Y_metadata)
         d2logpdf_dlink2_dv = self.d2logpdf_dlink2_dv(f, y, Y_metadata=Y_metadata)
         return np.array((d2logpdf_dlink2_dvar, d2logpdf_dlink2_dv))
 
     def predictive_mean(self, mu, sigma, Y_metadata=None):
+        """
+        FIXME: It appears sigma is usually actually the variance when called!
+
+        Predictive mean of the likelihood using the mean and the variance of the Gaussian process posterior representing the mean of the likelihood
+
+        .. math:
+            E(Y_star|Y) = E( E(Y_star|f_star, Y) )
+                        = \int p(y^*|f^*)p(f^*|f)p(f|y) df df^*
+
+        :param mu: mean of Gaussian process posterior
+        :type mu: np.ndarray (num_data x output_dim)
+        :param variance: varaince of Gaussian process posterior
+        :type variance: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        """
         # The comment here confuses mean and median.
         return self.gp_link.transf(mu) # only true if link is monotonic, which it is.
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
+        """
+        FIXME: It appears sigma is usually actually the variance when called!
+
+        Predictive variance V(Y_star).
+
+        The following variance decomposition is used:
+        V(Y_star) = E( V(Y_star|f_star)**2 ) + V( E(Y_star|f_star) )**2
+
+        :param mu: mean of Gaussian process posterior
+        :type mu: np.ndarray (num_data x output_dim)
+        :param variance: varaince of Gaussian process posterior
+        :type variance: np.ndarray (num_data x output_dim)
+        :param pred_mean: predictive mean of Y* obtained from py:func:`predictive_mean`
+        :type pred_mean: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: predictive variance
+        :rtype: np.ndarray
+        """
         if self.deg_free<=2.:
             return np.empty(mu.shape)*np.nan # does not exist for degrees of freedom <= 2.
         else:
             return super(StudentT, self).predictive_variance(mu, variance, predictive_mean, Y_metadata)
 
     def conditional_mean(self, gp):
+        """
+        The mean of the random variable conditioned on one value of the GP
+
+        :param gp: untransformed Gaussian process value
+        :type gp: np.ndarray (num_data x output_dim)
+        """
         return self.gp_link.transf(gp)
 
     def conditional_variance(self, gp):
+        """
+        The variance of the random variable conditioned on one value of the GP
+
+        :param gp: untransformed Gaussian process value
+        :type gp: np.ndarray (num_data x output_dim)
+        """
         return self.deg_free/(self.deg_free - 2.)
 
     def samples(self, gp, Y_metadata=None):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 
-        :param gp: latent variable
+        :param gp: latent variable f, before it has been transformed (squashed)
+        :type gp: np.ndarray (num_pred_points x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used for student_t distribution
+        :type Y_metadata: dict
+        :returns: Samples from the likelihood using these values for the latent function
+        :rtype: np.ndarray (num_pred_points x output_dim)
         """
         orig_shape = gp.shape
         gp = gp.flatten()
@@ -296,3 +441,16 @@ class StudentT(Likelihood):
         student_t_samples = stats.t.rvs(dfs, loc=self.gp_link.transf(gp),
                                         scale=scales)
         return student_t_samples.reshape(orig_shape)
+
+    def to_dict(self):
+        """
+        Make a dictionary of all the important features of the likelihood in order to recreate it at a later date.
+
+        :returns: Dictionary of likelihood
+        :rtype: dict
+        """
+        input_dict = super(StudentT, self)._to_dict()
+        input_dict["class"] = "GPy.likelihoods.StudentT"
+        input_dict["t_scale2"] = self.sigma2.values.tolist()
+        input_dict["deg_free"] = self.v.values.tolist()
+        return input_dict

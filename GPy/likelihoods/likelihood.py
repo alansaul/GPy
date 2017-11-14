@@ -16,26 +16,72 @@ from ..core.parameterization import Parameterized
 
 class Likelihood(Parameterized):
     """
-    Likelihood base class, used to defing p(y|f).
+    Likelihood base class, used to define p(y|f).
 
     All instances use _inverse_ link functions, which can be swapped out. It is
-    expected that inheriting classes define a default inverse link function
+    expected that inheriting classes define a default inverse link function, which typically warps the Gaussian process posterior into the correct domain for the parameter it is representing. These are also known as transformation functions.
 
     To use this class, inherit and define missing functionality.
 
     Inheriting classes *must* implement:
-       pdf_link : a bound method which turns the output of the link function into the pdf
-       logpdf_link : the logarithm of the above
 
-    To enable use with EP, inheriting classes *must* define:
-       TODO: a suitable derivative function for any parameters of the class
-    It is also desirable to define:
-       moments_match_ep : a function to compute the EP moments If this isn't defined, the moments will be computed using 1D quadrature.
+       - pdf_link : a bound method which turns the output of the link function into the pdf
+
+       - logpdf_link : the logarithm of the above and if the likelihood contains parameters (often denoted thetaL) that need to be optimised:
+
+       - update_gradients : Given the gradient of the model wrt the variance parameter, set the parameters gradient.
+
+    To enable use with EP, it is desirable to define:
+   
+       - moments_match_ep : a function to compute the EP moments
+
+       - ep_gradients: a function to compute the gradients for EP with respect to any parameters the likelihood might have
+
+    If this isn't defined, the moments and gradients will be computed using 1D quadrature, which may lead to inaccuracies, overflow errors, and performance issues.
 
     To enable use with Laplace approximation, inheriting classes *must* define:
-       Some derivative functions *AS TODO*
 
-    For exact Gaussian inference, define *JH TODO*
+       - dlogpdf_dlink: First derivative of the log likelihood with respect to the transformed f.
+
+       - d2logpdf_dlink2: Hessian of likelihood wrt the transformed f. This is typically a diagonal matrix as the likelihood usually factorises across data points. If this is not the case the LaplaceBlock inference method should be used in replacement for Laplace, this comes with associated stability and computational speed decreases.
+
+    If the likelihood contains additional parameters that need to be optimised:
+
+       - d3logpdf_dlink3: If the likelihood contains additional parameters, the third derivative of the loglikelihood with respect to the transformed f must also be implemented.
+
+       - dlogpdf_link_dtheta: derivative of the log likelihood, logpdf_link, wrt the parameters of interest, np.ndarray (num_parameters x num_data x output_dim)
+
+       - dlogpdf_dlink_dtheta: derivative of the derivative of the log likelihood wrt f, wrt the parameters of interest, np.ndarray (num_parameters x num_data x output_dim)
+
+       - d2logpdf_dlink2_dtheta: derivative of the hessian wrt f, taken wrt to the parameters of interest, np.ndarray (num_parameters x num_data x output_dim)
+
+    For exact Gaussian inference:
+
+        - exact_inference_gradients: compute the gradients of the parameters of the likelihood given dL_dKdiag
+ 
+    For predictions, the following functions should be implemented:
+
+        - predictive_mean: Expected value of Y^* given Y, i.e. E(Y^*|Y, X*) at new prediction points X*, given the mean and variance of the Gaussian process posterior
+
+        - predictive_variance: Variance of V(Y^*|Y, X^*), given the preditive mean, and the mean and variance of the Gaussian process posterior
+
+        - predictive_quantiles: Get the quantiles of y* at new predictive points.
+
+        - conditional_mean : condtional mean of the random variable given a value for the gp, required for quadrature
+ 
+        - conditional_variance : condtional variance of the random variable given a value for the gp, required for quadrature
+
+    If any of these functions are not implemented, or they result in numerically unstable results (exeptions are raised) these quantaties will be approximated by sampling. In order to do this the following method must be implemented:
+
+        - samples: given the untransformed GP (raw f values), transform it is necessary, and take samples from p(y|\\lambda(f)).
+
+    If the model needs to be saved such that it can be easily reloaded the following functions should be implemented:
+
+        - to_dict: Make a dictionary of all the important features of the likelihood in order to recreate it at a later date. This should contain the class name and any hyperparameters, see :py:class:`~GPy.likelihoods.gaussian.Gaussian` for an example.
+
+    :param gp_link: transformation function
+    :type gp_link: :py:class:`~GPy.likelihoods.link_functions.GPTransformation`
+    :param str name: name given to likelihood instance
 
     """
     def __init__(self, gp_link, name):
@@ -47,6 +93,12 @@ class Likelihood(Parameterized):
         self.name = name
 
     def to_dict(self):
+        """
+        Make a dictionary of all the important features of the likelihood in order to recreate it at a later date.
+
+        :returns: Dictionary of likelihood
+        :rtype: dict
+        """
         raise NotImplementedError
 
     def _to_dict(self):
@@ -57,6 +109,12 @@ class Likelihood(Parameterized):
 
     @staticmethod
     def from_dict(input_dict):
+        """
+        Make a :py:class:`Likelihood` instance from a dictionary containing all the information (usually saved previously with to_dict). Will fail if no data is provided and it is also not in the dictionary.
+
+        :param input_dict: Input dictionary to recreate the likelihood, usually saved previously from to_dict
+        :type input_dict: dict
+        """
         import copy
         input_dict = copy.deepcopy(input_dict)
         likelihood_class = input_dict.pop('class')
@@ -81,13 +139,34 @@ class Likelihood(Parameterized):
         The likelihood should infer how many latent functions are needed for the likelihood
 
         Default is the number of outputs
+
+        :param Y: observed output data
+        :type Y: np.ndarray (num_data x output_dim)
+        :returns: number of latent functions required for the likelihood
+        :rtype: int
         """
         return Y.shape[1]
 
     def exact_inference_gradients(self, dL_dKdiag,Y_metadata=None):
+        """
+        Compute the gradients of dL_dthetaL (likelihood parameters)
+
+        :param dL_dKdiag: derivative of the approximate marginal likelihood wrt diagonal values of covariance
+        :type dL_dKdiag: np.ndarray (num_data x 1)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, sometimes used for heteroscedastic Gaussian likelihoods and others.
+        :type Y_metadata: dict
+        :returns: dL_dthetaL
+        :rtype: np.ndarray
+        """
         return np.zeros(self.size)
 
     def update_gradients(self, partial):
+        """
+        Given the gradient of the model wrt the parameters, set the parameters gradient.
+
+        :param grad: dL_dthetaL
+        :type grad: tuple (num_parameters)
+        """
         if self.size > 0:
             raise NotImplementedError('Must be implemented for likelihoods with parameters to be optimized')
 
@@ -96,36 +175,41 @@ class Likelihood(Parameterized):
         In case it is needed, this function assess the output values or makes any pertinent transformation on them.
 
         :param Y: observed output
-        :type Y: Nx1 numpy.darray
-
+        :type Y: np.ndarray (num_data x output_dim)
         """
         return Y
 
     def conditional_mean(self, gp):
         """
         The mean of the random variable conditioned on one value of the GP
+
+        :param gp: untransformed Gaussian process value
+        :type gp: np.ndarray (num_data x output_dim)
         """
         raise NotImplementedError
 
     def conditional_variance(self, gp):
         """
         The variance of the random variable conditioned on one value of the GP
+
+        :param gp: untransformed Gaussian process value
+        :type gp: np.ndarray (num_data x output_dim)
         """
         raise NotImplementedError
 
     def log_predictive_density(self, y_test, mu_star, var_star, Y_metadata=None):
         """
-        Calculation of the log predictive density
+        Calculation of the log predictive density. Currently only implemented for a 1d output
 
         .. math:
             p(y_{*}|D) = p(y_{*}|f_{*})p(f_{*}|\mu_{*}\\sigma^{2}_{*})
 
         :param y_test: test observations (y_{*})
-        :type y_test: (Nx1) array
+        :type y_test: np.ndarray (num_pred_data x 1)
         :param mu_star: predictive mean of gaussian p(f_{*}|mu_{*}, var_{*})
-        :type mu_star: (Nx1) array
+        :type mu_star: np.ndarray (num_pred_data x 1)
         :param var_star: predictive variance of gaussian p(f_{*}|mu_{*}, var_{*})
-        :type var_star: (Nx1) array
+        :type var_star: np.ndarray (num_pred_data x 1)
         """
         assert y_test.shape==mu_star.shape
         assert y_test.shape==var_star.shape
@@ -171,7 +255,7 @@ class Likelihood(Parameterized):
                               - 0.5*np.log(2*np.pi*vi)
                               - 0.5*np.square(fi_star-mi)/vi)
                 if not np.isfinite(res):
-                    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+                    raise ValueError("Found infinite value, likely large PDF resulting in overflow")
                 return res
 
             return f
@@ -183,18 +267,18 @@ class Likelihood(Parameterized):
 
     def log_predictive_density_sampling(self, y_test, mu_star, var_star, Y_metadata=None, num_samples=1000):
         """
-        Calculation of the log predictive density via sampling
+        Calculation of the log predictive density via sampling, Currently only implemented for a 1d output
 
         .. math:
             log p(y_{*}|D) = log 1/num_samples prod^{S}_{s=1} p(y_{*}|f_{*s})
             f_{*s} ~ p(f_{*}|\mu_{*}\\sigma^{2}_{*})
 
         :param y_test: test observations (y_{*})
-        :type y_test: (Nx1) array
+        :type y_test: np.ndarray (num_pred_data x 1)
         :param mu_star: predictive mean of gaussian p(f_{*}|mu_{*}, var_{*})
-        :type mu_star: (Nx1) array
+        :type mu_star: np.ndarray (num_pred_data x 1)
         :param var_star: predictive variance of gaussian p(f_{*}|mu_{*}, var_{*})
-        :type var_star: (Nx1) array
+        :type var_star: np.ndarray (num_pred_data x 1)
         :param num_samples: num samples of p(f_{*}|mu_{*}, var_{*}) to take
         :type num_samples: int
         """
@@ -213,11 +297,15 @@ class Likelihood(Parameterized):
 
     def moments_match_ep(self,obs,tau,v,Y_metadata_i=None):
         """
-        Calculation of moments using quadrature
+        Calculation of moments using quadrature for ith data point
 
-        :param obs: observed output
-        :param tau: cavity distribution 1st natural parameter (precision)
-        :param v: cavity distribution 2nd natural paramenter (mu*precision)
+        :param float obs: ith observation
+        :param float tau: precision of the cavity distribution (1st natural parameter)
+        :param float v: mean/variance of the cavity distribution (2nd natural parameter)
+        :param Y_metadata_i: Metadata associated with observed ith output data for likelihood, sometimes used for heteroscedastic Gaussian likelihoods and others.
+        :type Y_metadata_i: dict
+        :returns: EP parameters, Z_hat, mu_hat, sigma2_hat
+        :rtype: tuple
         """
         #Compute first integral for zeroth moment.
         #NOTE constant np.sqrt(2*pi/tau) added at the end of the function
@@ -254,11 +342,32 @@ class Likelihood(Parameterized):
     #only compute gh points if required
     __gh_points = None
     def _gh_points(self, T=20):
+        """
+        Generate Gauss hermite points and cache them.
+        """
         if self.__gh_points is None:
             self.__gh_points = np.polynomial.hermite.hermgauss(T)
         return self.__gh_points
 
     def ep_gradients(self, Y, cav_tau, cav_v, dL_dKdiag, Y_metadata=None, quad_mode='gk', boost_grad=1.):
+        """
+        Compute the gradients of dL_dparameter using the chain rule and ep parameters
+
+        If this is not overridden this uses quadrature.
+
+        :param Y: observed outputs
+        :type Y: np.ndarray (num_data x output_dim)
+        :param cav_tau: precision values of the cavity distributions
+        :type cav_tau: np.ndarray (num_data x output_dim)
+        :param cav_v: mean/variance values of the cavity distributions
+        :type cav_v: np.ndarray (num_data x output_dim)
+        :param dL_dKdiag: derivative of the approximate marginal likelihood wrt diagonal values of covariance
+        :type dL_dKdiag: np.ndarray (num_data x 1)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, sometimes used for heteroscedastic Gaussian likelihoods and others.
+        :type Y_metadata: dict
+        :returns: dL_dparams
+        :rtype: num_params
+        """
         if self.size > 0:
             shape = Y.shape
             tau,v,Y = cav_tau.flatten(), cav_v.flatten(),Y.flatten()
@@ -296,9 +405,20 @@ class Likelihood(Parameterized):
             dL_dtheta = np.zeros(self.num_params)
         return dL_dtheta
 
-
     def integrate_gk(self, Y, mu, sigma, Y_metadata_i=None):
-        # gaussian-kronrod integration.
+        """
+        Generic method for Gauss-Kronrod integration on the ith datapoint, for the ith likelihood parameter
+
+        :param float Y: Observed ith output data
+        :param float m: mean of Gaussian that expectation is over, q, for ith datapoint
+        :param float sigma: standard deviation of Gaussian that expectation is over, q, for ith datapoint
+        :param Y_metadata_i: Metadata associated with ith observed output data for likelihood, not typically needed for Bernoulli likelihood
+        :type Y_metadata_i: dict
+        :param gh_points: tuple of Gauss hermite locations and weights for quadrature if used
+        :type gh_points: tuple(np.ndarray (num_points), np.ndarray (num_points))
+        :returns: dF_dtheta_i
+        :rtype: float
+        """
         fmin = -np.inf
         fmax = np.inf
         SQRT_2PI = np.sqrt(2.*np.pi)
@@ -313,7 +433,19 @@ class Likelihood(Parameterized):
         return dF_dtheta_i
 
     def integrate_gh(self, Y, mu, sigma, Y_metadata_i=None, gh_points=None):
-        # gaussian-hermite quadrature.
+        """
+        Generic method for Gauss-Hermite integration on the ith datapoint, for the ith likelihood parameter
+
+        :param float Y: Observed ith output data
+        :param float m: mean of Gaussian that expectation is over, q, for ith datapoint
+        :param float sigma: standard deviation of Gaussian that expectation is over, q, for ith datapoint
+        :param Y_metadata_i: Metadata associated with ith observed output data for likelihood, not typically needed for Bernoulli likelihood
+        :type Y_metadata_i: dict
+        :param gh_points: tuple of Gauss hermite locations and weights for quadrature if used
+        :type gh_points: tuple(np.ndarray (num_points), np.ndarray (num_points))
+        :returns: dF_dtheta_i
+        :rtype: float
+        """
         # "calculate site derivatives E_f{d logp(y_i|f_i)/da} where a is a likelihood parameter
         # and the expectation is over the exact marginal posterior, which is not gaussian- and is
         # unnormalised product of the cavity distribution(a Gaussian) and the exact likelihood term.
@@ -347,13 +479,32 @@ class Likelihood(Parameterized):
         """
         Use Gauss-Hermite Quadrature to compute
 
-           E_p(f) [ log p(y|f) ]
-           d/dm E_p(f) [ log p(y|f) ]
-           d/dv E_p(f) [ log p(y|f) ]
+        .. math:
+           E_q(f) [ log p(y|f) ]
+           d/dm E_q(f) [ log p(y|f) ]
+           d/dv E_q(f) [ log p(y|f) ]
 
-        where p(f) is a Gaussian with mean m and variance v. The shapes of Y, m and v should match.
+        where q(f) is a Gaussian with mean m and variance v. The shapes of Y, m and v should match.
+
+        For all i in num_data, this is:
+
+        .. math::
+            F = \int q(f_{i}|m_{i},v_{i}) \log p(y_{i} | f_{i}) df_{i}
 
         if no gh_points are passed, we construct them using defualt options
+
+        :param Y: Observed output data
+        :type Y: np.ndarray (num_data x output_dim)
+        :param m: means of Gaussian that expectation is over, q
+        :type m: np.ndarray (num_data x output_dim)
+        :param v: variances of Gaussian that expectation is over, q
+        :type v: np.ndarray (num_data x output_dim)
+        :param gh_points: tuple of Gauss hermite locations and weights for quadrature if used
+        :type gh_points: tuple(np.ndarray (num_points), np.ndarray (num_points))
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not typically needed for Bernoulli likelihood
+        :type Y_metadata: dict
+        :returns: F, dF_dmu, dF_dvar, dF_dthetaL
+        :rtype: tuple(np.ndarray(num_data x output_dim), np.ndarray(num_data x output_dim), np.ndarray(num_data x output_dim), None)
         """
 
         if gh_points is None:
@@ -402,9 +553,18 @@ class Likelihood(Parameterized):
         """
         Quadrature calculation of the predictive mean: E(Y_star|Y) = E( E(Y_star|f_star, Y) )
 
-        :param mu: mean of posterior
-        :param sigma: standard deviation of posterior
+        .. math:
+            E(Y_star|Y) = E( E(Y_star|f_star, Y) )
+                        = \int p(y^*|f^*)p(f^*|f)p(f|y) df df^*
 
+        :param mu: mean of Gaussian process posterior
+        :type mu: np.ndarray (num_data x output_dim)
+        :param variance: varaince of Gaussian process posterior
+        :type variance: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not typically needed for Bernoulli likelihood
+        :type Y_metadata: dict
+        :returns: predictive mean
+        :rtype: np.ndarray (num_data x output_dim)
         """
         #conditional_mean: the edpected value of y given some f, under this likelihood
         fmin = -np.inf
@@ -427,15 +587,21 @@ class Likelihood(Parameterized):
 
     def predictive_variance(self, mu,variance, predictive_mean=None, Y_metadata=None):
         """
-        Approximation to the predictive variance: V(Y_star)
+        Approximation to predictive variance V(Y_star|Y,X^*). For a Bernoulli likelihood with Probit this is non-sensical, as you are asking for the variance of values that can only take 0 or 1.
 
         The following variance decomposition is used:
         V(Y_star) = E( V(Y_star|f_star)**2 ) + V( E(Y_star|f_star) )**2
 
-        :param mu: mean of posterior
-        :param sigma: standard deviation of posterior
-        :predictive_mean: output's predictive mean, if None _predictive_mean function will be called.
-
+        :param mu: mean of Gaussian process posterior
+        :type mu: np.ndarray (num_data x output_dim)
+        :param variance: varaince of Gaussian process posterior
+        :type variance: np.ndarray (num_data x output_dim)
+        :predictive_mean: output's predictive mean of Y*, if None it is obtained from :py:func:`_predictive_meanz function will be called.
+        :type predictive_mean: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not typically needed for Bernoulli likelihood
+        :type Y_metadata: dict
+        :returns: predictive variance:
+        :rtype: float
         """
         #sigma2 = sigma**2
         normalizer = np.sqrt(2*np.pi*variance)
@@ -485,27 +651,151 @@ class Likelihood(Parameterized):
         return exp_var + var_exp
 
     def pdf_link(self, inv_link_f, y, Y_metadata=None):
+        """
+        Likelihood function given inverse link of f.
+
+        .. math::
+            p(y|\\lambda(f))
+
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not usually needed
+        :type Y_metadata: dict
+        :returns: likelihood evaluated for this point
+        :rtype: np.ndarray (num_data x output_dim)
+        """
         raise NotImplementedError
 
     def logpdf_link(self, inv_link_f, y, Y_metadata=None):
+        """
+        Log Likelihood function given inverse link of f.
+
+        .. math::
+            \\ln p(y|\\lambda(f))
+
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not usually needed
+        :type Y_metadata: dict
+        :returns: log likelihood evaluated at points inverse link of f.
+        :rtype: np.ndarray (num_data x output_dim)
+        """
         raise NotImplementedError
 
     def dlogpdf_dlink(self, inv_link_f, y, Y_metadata=None):
+        """
+        Gradient of the pdf at y, given inverse link of f w.r.t inverse link of f.
+
+        .. math::
+            \\frac{d\\ln p(y|\\lambda(f))}{d\\lambda(f)}
+
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not usually needed
+        :type Y_metadata: dict
+        :returns: gradient of log likelihood evaluated at points inverse link of f.
+        :rtype: np.ndarray (num_data x output_dim)
+        """
         raise NotImplementedError
 
     def d2logpdf_dlink2(self, inv_link_f, y, Y_metadata=None):
+        """
+        Hessian at y, given inv_link_f, w.r.t inv_link_f the hessian will be 0 unless i == j if likelihood factorises across datapoints, and thus represented as a vector in this case
+        i.e. second derivative logpdf at y given inverse link of f_i and inverse link of f_j  w.r.t inverse link of f_i and inverse link of f_j.
+
+        .. math::
+            \\frac{d^{2}\\ln p(y|\\lambda(f))}{d\\lambda(f)^{2}}
+
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not usually needed
+        :type Y_metadata: dict
+        :returns: Diagonal of log hessian matrix (second derivative of log likelihood evaluated at points inverse link of f.
+        :rtype: np.ndarray (num_data x output_dim)
+
+        .. Note::
+            Will return diagonal of hessian, since every where else it is 0, when the likelihood factorizes over cases (the distribution for y_i depends only on inverse link of f_i not on inverse link of f_(j!=i)
+        """
         raise NotImplementedError
 
     def d3logpdf_dlink3(self, inv_link_f, y, Y_metadata=None):
+        """
+        Third order derivative log-likelihood function at y given inverse link of f w.r.t inverse link of f. Diagonal if likelihood factorises and thus represented as a vector.
+
+        .. math::
+            \\frac{d^{3} \\ln p(y|\\lambda(f))}{d^{3}\\lambda(f)}
+
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not typically needed for Bernoulli likelihood
+        :type Y_metadata: dict
+        :returns: third derivative of log likelihood evaluated at points inverse_link(f)
+        :rtype: np.ndarray (num_data x output_dim)
+        """
         raise NotImplementedError
 
     def dlogpdf_link_dtheta(self, inv_link_f, y, Y_metadata=None):
+        """
+        Gradient of the log-likelihood function at y given inv_link(f), w.r.t likelihood parameters
+
+        .. math::
+            \\frac{d \\ln p(y|\\lambda(f))}{d\\theta_L}
+
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used
+        :type Y_metadata: dict
+        :returns: dL_dthetas
+        :rtype: np.ndarray (num_params x num_data x output_dim)
+        """
         raise NotImplementedError
 
     def dlogpdf_dlink_dtheta(self, inv_link_f, y, Y_metadata=None):
+        """
+        Gradient of the derivative of the log-likelihood function at y given inv_link(f), w.r.t. likelihood parameters
+
+        .. math::
+            \\frac{d }{d\\theta_L}\\frac{d\\ln p(y|\\lambda(f))}{d\\lambda(f)}
+
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used
+        :type Y_metadata: dict
+        :returns: dL_dthetas
+        :rtype: np.ndarray (num_params x num_data x output_dim)
+        """
         raise NotImplementedError
 
     def d2logpdf_dlink2_dtheta(self, inv_link_f, y, Y_metadata=None):
+        """
+        Gradient of the hessian of the log-likelihood function at y given inv_link(f), w.r.t. likelihood parameters
+
+        .. math::
+            \\frac{d }{d\\theta_L}\\frac{d^{2}\\ln p(y|\\lambda(f))}{d\\lambda(f)^{2}}
+
+        :param inv_link_f: latent variables inverse link of f.
+        :type inv_link_f: np.ndarray (num_data x output_dim)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used
+        :type Y_metadata: dict
+        :returns: dL_dthetas
+        :rtype: np.ndarray (num_params x num_data x output_dim)
+        """
         raise NotImplementedError
 
     def pdf(self, f, y, Y_metadata=None):
@@ -516,12 +806,13 @@ class Likelihood(Parameterized):
             p(y|\\lambda(f))
 
         :param f: latent variables f
-        :type f: Nx1 array
+        :type f: np.ndarray (num_data x num_output)
         :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in student t distribution - not used
+        :type y: np.ndarray (num_data x num_output)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used
+        :type Y_metadata: dict
         :returns: likelihood evaluated for this point
-        :rtype: float
+        :rtype: np.ndarray (num_data x num_output)
         """
         if isinstance(self.gp_link, link_functions.Identity):
             return self.pdf_link(f, y, Y_metadata=Y_metadata)
@@ -533,6 +824,18 @@ class Likelihood(Parameterized):
         """
         Convenience function that can overridden for functions where this could
         be computed more efficiently
+
+        .. math:
+            \sum^{n}_{i=1} p(y_{i}|\\lambda(f_{i}))
+
+        :param f: latent variables f
+        :type f: np.ndarray (num_data x num_output)
+        :param y: data
+        :type y: np.ndarray (num_data x num_output)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used
+        :type Y_metadata: dict
+        :returns: likelihood evaluated for this point, summed over contributions from all datum
+        :rtype: float
         """
         return np.sum(self.logpdf(f, y, Y_metadata=Y_metadata))
 
@@ -544,12 +847,13 @@ class Likelihood(Parameterized):
             \\log p(y|\\lambda(f))
 
         :param f: latent variables f
-        :type f: Nx1 array
+        :type f: np.ndarray (num_data x num_output)
         :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in student t distribution - not used
+        :type y: np.ndarray (num_data x num_output)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used
+        :type Y_metadata: dict
         :returns: log likelihood evaluated for this point
-        :rtype: float
+        :rtype: np.ndarray (num_data x num_output)
         """
         if isinstance(self.gp_link, link_functions.Identity):
             return self.logpdf_link(f, y, Y_metadata=Y_metadata)
@@ -566,12 +870,13 @@ class Likelihood(Parameterized):
             \\frac{d\\log p(y|\\lambda(f))}{df} = \\frac{d\\log p(y|\\lambda(f))}{d\\lambda(f)}\\frac{d\\lambda(f)}{df}
 
         :param f: latent variables f
-        :type f: Nx1 array
+        :type f: np.ndarray (num_data x num_output)
         :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in student t distribution - not used
+        :type y: np.ndarray (num_data x num_output)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used
+        :type Y_metadata: dict
         :returns: derivative of log likelihood evaluated for this point
-        :rtype: 1xN array
+        :rtype: np.ndarray (num_data x num_output)
         """
         if isinstance(self.gp_link, link_functions.Identity):
             return self.dlogpdf_dlink(f, y, Y_metadata=Y_metadata)
@@ -591,12 +896,13 @@ class Likelihood(Parameterized):
             \\frac{d^{2}\\log p(y|\\lambda(f))}{df^{2}} = \\frac{d^{2}\\log p(y|\\lambda(f))}{d^{2}\\lambda(f)}\\left(\\frac{d\\lambda(f)}{df}\\right)^{2} + \\frac{d\\log p(y|\\lambda(f))}{d\\lambda(f)}\\frac{d^{2}\\lambda(f)}{df^{2}}
 
         :param f: latent variables f
-        :type f: Nx1 array
+        :type f: np.ndarray (num_data x num_output)
         :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in student t distribution - not used
+        :type y: np.ndarray (num_data x num_output)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used
+        :type Y_metadata: dict
         :returns: second derivative of log likelihood evaluated for this point (diagonal only)
-        :rtype: 1xN array
+        :rtype: np.ndarray (num_data x num_output)
         """
         if isinstance(self.gp_link, link_functions.Identity):
             d2logpdf_df2 = self.d2logpdf_dlink2(f, y, Y_metadata=Y_metadata)
@@ -619,12 +925,13 @@ class Likelihood(Parameterized):
             \\frac{d^{3}\\log p(y|\\lambda(f))}{df^{3}} = \\frac{d^{3}\\log p(y|\\lambda(f)}{d\\lambda(f)^{3}}\\left(\\frac{d\\lambda(f)}{df}\\right)^{3} + 3\\frac{d^{2}\\log p(y|\\lambda(f)}{d\\lambda(f)^{2}}\\frac{d\\lambda(f)}{df}\\frac{d^{2}\\lambda(f)}{df^{2}} + \\frac{d\\log p(y|\\lambda(f)}{d\\lambda(f)}\\frac{d^{3}\\lambda(f)}{df^{3}}
 
         :param f: latent variables f
-        :type f: Nx1 array
+        :type f: np.ndarray (num_data x num_output)
         :param y: data
-        :type y: Nx1 array
-        :param Y_metadata: Y_metadata which is not used in student t distribution - not used
+        :type y: np.ndarray (num_data x num_output)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used
+        :type Y_metadata: dict
         :returns: third derivative of log likelihood evaluated for this point
-        :rtype: float
+        :rtype: np.ndarray (num_data x num_output)
         """
         if isinstance(self.gp_link, link_functions.Identity):
             d3logpdf_df3 = self.d3logpdf_dlink3(f, y, Y_metadata=Y_metadata)
@@ -639,10 +946,18 @@ class Likelihood(Parameterized):
             d3logpdf_df3 = chain_3(d3logpdf_dlink3, dlink_df, d2logpdf_dlink2, d2link_df2, dlogpdf_dlink, d3link_df3)
         return d3logpdf_df3
 
-
     def dlogpdf_dtheta(self, f, y, Y_metadata=None):
         """
-        TODO: Doc strings
+        Derivative of the dlogpdf_dlink w.r.t likelihood parameter
+
+        :param f: latent variables f
+        :type f: np.ndarray (num_data x num_output)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used
+        :type Y_metadata: dict
+        :returns: derivative of log likelihood evaluated at points inverse_link(f) w.r.t likelihood parameters
+        :rtype: np.ndarray (num_params x num_data x output_dim)
         """
         if self.size > 0:
             if self.not_block_really:
@@ -658,7 +973,16 @@ class Likelihood(Parameterized):
 
     def dlogpdf_df_dtheta(self, f, y, Y_metadata=None):
         """
-        TODO: Doc strings
+        Derivative of the dlogpdf_dlink w.r.t likelihood parameters
+
+        :param f: latent variables f
+        :type f: np.ndarray (num_data x num_output)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used
+        :type Y_metadata: dict
+        :returns: derivative of log likelihood evaluated at points inverse_link(f) w.r.t likelihood parameters
+        :rtype: np.ndarray (num_params x num_data x output_dim)
         """
         if self.size > 0:
             if self.not_block_really:
@@ -682,7 +1006,17 @@ class Likelihood(Parameterized):
 
     def d2logpdf_df2_dtheta(self, f, y, Y_metadata=None):
         """
-        TODO: Doc strings
+        Gradient of the hessian (d2logpdf_dlink2) w.r.t likelihood parameters
+
+        :param f: latent variables f
+        :type f: np.ndarray (num_data x num_output)
+        :param y: observed data
+        :type y: np.ndarray (num_data x output_dim)
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used
+        :type Y_metadata: dict
+        :returns: derivative of log hessian evaluated at points inv_link(f_i) and inv_link(f_j) w.r.t likelihood parameters
+        :rtype: np.ndarray (num_params x num_data x output_dim)
+
         """
         if self.size > 0:
             if self.not_block_really:
@@ -707,6 +1041,7 @@ class Likelihood(Parameterized):
             return np.zeros((0, f.shape[0], f.shape[1]))
 
     def _laplace_gradients(self, f, y, Y_metadata=None):
+        """ Convenience function that gets all derivatives for laplace and checks their shapes """
         dlogpdf_dtheta = self.dlogpdf_dtheta(f, y, Y_metadata=Y_metadata)
         dlogpdf_df_dtheta = self.dlogpdf_df_dtheta(f, y, Y_metadata=Y_metadata)
         d2logpdf_df2_dtheta = self.d2logpdf_df2_dtheta(f, y, Y_metadata=Y_metadata)
@@ -721,12 +1056,16 @@ class Likelihood(Parameterized):
 
     def predictive_values(self, mu, var, full_cov=False, Y_metadata=None):
         """
-        Compute  mean, variance of the  predictive distibution.
+        Compute  mean, variance of the predictive distibution. This is either done analytically if predictive_mean and predictive_variance are implemented, or by sampling if there is an issue with this.
 
         :param mu: mean of the latent variable, f, of posterior
         :param var: variance of the latent variable, f, of posterior
         :param full_cov: whether to use the full covariance or just the diagonal
-        :type full_cov: Boolean
+        :type full_cov: bool
+        :param Y_metadata: Metadata associated with observed output data for likelihood, not usually used
+        :type Y_metadata: dict
+        :returns: mean and (co)variance of predictive distribution p(y*|y)
+        :rtype: tuple(np.ndarray(num_pred_points x output_dim), np.ndarray(num_pred_points x output_dim))
         """
         try:
             pred_mean = self.predictive_mean(mu, var, Y_metadata=Y_metadata)
@@ -742,10 +1081,27 @@ class Likelihood(Parameterized):
 
         return pred_mean, pred_var
 
-    def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None):
+    def predictive_quantiles(self, mu, var, quantiles, Y_metadata=None, Nf_samp=300, Ny_samp=1):
+        """
+        If this is not overridden, get the quantiles of y* at new predictive points by sampling.
+
+        :param mu: mean of posterior Gaussian process at predictive locations
+        :type mu: np.ndarray (num_data x output_dim)
+        :param var: variance of posterior Gaussian process at predictive locations
+        :type var: np.ndarray (num_data x output_dim)
+        :param quantiles: tuple of quantiles desired, default is (2.5, 97.5) which is the 95% interval
+        :type quantiles: tuple
+        :param Y_metadata: Metadata associated with observed output data for likelihood, see note in __init__
+        :type Y_metadata: dict
+        :param int Nf_samp: Number of samples to take from the latent function
+        :param int Ny_samp: Number of samples to take from likelihood at the location of the sampled latent function
+        :returns: predictive quantiles tuple for input, one for each quantile
+        :rtype: tuple(np.ndarray (num_pred_points, output_dim) )
+
+        .. warning:
+            Ny_samp is currently always assumed to be 1
+        """
         #compute the quantiles by sampling!!!
-        Nf_samp = 300
-        Ny_samp = 1
         s = np.random.randn(mu.shape[0], Nf_samp)*np.sqrt(var) + mu
         ss_y = self.samples(s, Y_metadata)#, samples=Ny_samp)
         #ss_y = ss_y.reshape(mu.shape[0], mu.shape[1], Nf_samp*Ny_samp)
@@ -757,8 +1113,13 @@ class Likelihood(Parameterized):
         """
         Returns a set of samples of observations based on a given value of the latent variable.
 
-        :param gp: latent variable
-        :param samples: number of samples to take for each f location
+        :param gp: latent variable f, before it has been transformed (squashed)
+        :type gp: np.ndarray (num_pred_points x output_dim)
+        :param Y_metadata: Metadata associated with predicted output data for likelihood, not usually used
+        :type Y_metadata: dict
+        :param int samples: number of samples to take for each f location
+        :returns: Samples from the likelihood using these values for the latent function
+        :rtype: np.ndarray (num_pred_points x output_dim)
         """
         raise NotImplementedError("""May be possible to use MCMC with user-tuning, see
                                   MCMC_pdf_samples in likelihood.py and write samples function
@@ -778,6 +1139,9 @@ class Likelihood(Parameterized):
         :param stepsize: Stepsize for the normal proposal distribution (will need modifying)
         :param burnin: number of samples to use for burnin (will need modifying)
         :param Y_metadata: Y_metadata for pdf
+
+        .. warning:
+            This function is not thoroughly tested and should be used with caution, if at all
         """
         print("Warning, using MCMC for sampling y*, needs to be tuned!")
         if starting_loc is None:

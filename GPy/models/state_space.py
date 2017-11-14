@@ -1,18 +1,6 @@
 # Copyright (c) 2013, Arno Solin.
 # Licensed under the BSD 3-clause license (see LICENSE.txt)
 #
-# This implementation of converting GPs to state space models is based on the article:
-#
-#  @article{Sarkka+Solin+Hartikainen:2013,
-#     author = {Simo S\"arkk\"a and Arno Solin and Jouni Hartikainen},
-#       year = {2013},
-#      title = {Spatiotemporal learning via infinite-dimensional {B}ayesian filtering and smoothing},
-#    journal = {IEEE Signal Processing Magazine},
-#     volume = {30},
-#     number = {4},
-#      pages = {51--61}
-#  }
-#
 
 import numpy as np
 from scipy import linalg
@@ -25,6 +13,24 @@ import pylab as pb
 from GPy.core.parameterization.param import Param
 
 class StateSpace(Model):
+    """
+    This implementation of converting GPs to state space models.
+
+    Based on:
+        Sarkka, Simo, Arno Solin, and Jouni Hartikainen. "Spatiotemporal learning via infinite-dimensional Bayesian filtering and smoothing: A look at Gaussian process regression through Kalman filtering." IEEE Signal Processing Magazine 30.4 (2013): 51-61.
+
+    :param X: Input observations
+    :type X: np.ndarray (num_data x input_dim)
+    :param Y: Observed output data
+    :type Y: np.ndarray (num_data x output_dim)
+    :param kernel: a GPy kernel, defaults to rbf
+    :type kernel: :py:class:`~GPy.kern.src.kern.Kern` instance | None
+    :param sigma2: Noise variance of Gaussian likelihood
+    :type sigma2: float
+    :param name: Name given to model
+    :type name: str
+    """
+
     def __init__(self, X, Y, kernel=None, sigma2=1.0, name='StateSpace'):
         super(StateSpace, self).__init__(name=name)
         self.num_data, input_dim = X.shape
@@ -95,7 +101,18 @@ class StateSpace(Model):
         return gradients
 
     def predict_raw(self, Xnew, Ynew=None, filteronly=False):
+        """
+        For making predictions, does not account for normalization or likelihood
 
+        full_cov is a boolean which defines whether the full covariance matrix
+        of the prediction is computed. If full_cov is False (default), only the
+        diagonal of the covariance is returned.
+
+        .. math::
+            p(f*|X*, X, Y) = \int^{\inf}_{\inf} p(f*|f,X*)p(f|X,Y) df
+                        = N(f*| K_{x*x}(K_{xx} + \Sigma)^{-1}Y, K_{x*x*} - K_{xx*}(K_{xx} + \Sigma)^{-1}K_{xx*}
+            \Sigma := \texttt{Likelihood.variance / Approximate likelihood covariance}
+        """
         # Set defaults
         if Ynew is None:
             Ynew = self.Y
@@ -137,6 +154,15 @@ class StateSpace(Model):
         return (m, V)
 
     def predict(self, Xnew, filteronly=False):
+        """
+        Predict the function(s) at the new point(s) Xnew. This includes the likelihood
+        variance added to the predicted underlying function (usually referred to as f).
+
+        In order to predict without adding in the likelihood use predict_raw
+
+        :param Xnew: The points at which to make a prediction
+        :type Xnew: np.ndarray (Nnew x self.input_dim)
+        """
 
         # Run the Kalman filter to get the state
         (m, V) = self.predict_raw(Xnew,filteronly=filteronly)
@@ -154,7 +180,19 @@ class StateSpace(Model):
     def plot(self, plot_limits=None, levels=20, samples=0, fignum=None,
             ax=None, resolution=None, plot_raw=False, plot_filter=False,
             linecol=Tango.colorsHex['darkBlue'],fillcol=Tango.colorsHex['lightBlue']):
+        """
+        Convenience function for plotting the fit of a GP.
 
+        :param plot_limits: The limits of the plot. If 1D [xmin,xmax], if 2D [[xmin,ymin],[xmax,ymax]]. Defaluts to data limits
+        :type plot_limits: np.array
+        :param int levels: the number of levels in the density (number bigger then 1, where 35 is smooth and 1 is the same as plot_confidence). You can go higher then 50 if the result is not smooth enough for you.
+        :param int samples: the number of samples to draw from the GP and plot into the plot. This will allways be samples from the latent function.
+        :param int fignum: Figure number to use
+        :param ax: matplotlib axes to plot on
+        :param int resolution: The resolution of the prediction [default:200]
+        :param bool plot_raw: Plot the raw GP, before corruption from the likelihood
+        :param bool plot_filter: ?
+        """
         # Deal with optional parameters
         if ax is None:
             fig = pb.figure(num=fignum)
@@ -194,6 +232,14 @@ class StateSpace(Model):
         ax.set_ylim(ymin, ymax)
 
     def prior_samples_f(self,X,size=10):
+        """
+        Simulate samples from the prior of the latent function f
+
+        :param X: input locations to sample latent function f
+        :type X: np.ndarray
+        :param int size: number of samples to take
+        :returns: samples of the prior at the input locations
+        """
 
         # Sort the matrix (save the order)
         (_, return_index, return_inverse) = np.unique(X,True,True)
@@ -220,6 +266,14 @@ class StateSpace(Model):
         return Y.T
 
     def posterior_samples_f(self,X,size=10):
+        """
+        Simulate samples from the posterior of the latent function f
+
+        :param X: input locations to sample latent function f
+        :type X: np.ndarray
+        :param int size: number of samples to take
+        :returns: samples of the posterior of the kalmen filter at the input locations
+        """
 
         # Sort the matrix (save the order)
         (_, return_index, return_inverse) = np.unique(X,True,True)
@@ -250,7 +304,14 @@ class StateSpace(Model):
         return Y.T
 
     def posterior_samples(self, X, size=10):
+        """
+        Simulate samples from the posterior of the latent function f once corrupted by the likelihood
 
+        :param X: input locations to sample latent function f
+        :type X: np.ndarray
+        :param int size: number of samples to take
+        :returns: samples of the posterior of the kalmen filter at the input locations once likelihood corruption has been added
+        """
         # Make samples of f
         Y = self.posterior_samples_f(X,size)
 
@@ -261,7 +322,9 @@ class StateSpace(Model):
         return Y
 
     def kalman_filter(self,F,L,Qc,H,R,Pinf,X,Y):
-        # KALMAN_FILTER - Run the Kalman filter for a given model and data
+        """
+        Run the kalmen filter given the model and the data
+        """
 
         # Allocate space for results
         MF = np.empty((F.shape[0],Y.shape[1]))
@@ -305,7 +368,9 @@ class StateSpace(Model):
         return (MF, PF)
 
     def rts_smoother(self,F,L,Qc,X,MS,PS):
-        # RTS_SMOOTHER - Run the RTS smoother for a given model and data
+        """ 
+        Run the RTS smoother for a given model and data
+        """
 
         # Time step lengths
         dt = np.empty(X.shape)
@@ -333,7 +398,9 @@ class StateSpace(Model):
         return (MS, PS)
 
     def kf_likelihood(self,F,L,Qc,H,R,Pinf,X,Y):
-        # Evaluate marginal likelihood
+        """
+        Evaluate marginal likelihood
+        """
 
         # Initialize
         lik = 0
@@ -382,7 +449,9 @@ class StateSpace(Model):
         return lik[0,0]
 
     def kf_likelihood_g(self,F,L,Qc,H,R,Pinf,dF,dQc,dPinf,dR,X,Y):
-        # Evaluate marginal likelihood gradient
+        """
+        Evaluate marginal likelihood gradient
+        """
 
         # State dimension, number of data points and number of parameters
         n      = F.shape[0]
@@ -703,7 +772,9 @@ class StateSpace(Model):
         return f
 
     def lti_disc(self,F,L,Qc,dt):
-        # Discrete-time solution to the LTI SDE
+        """
+        Discrete-time solution to the LTI SDE
+        """
 
         # Dimensionality
         n = F.shape[0]
