@@ -94,7 +94,7 @@ class SVGP(SparseGP):
 
     def stochastic_grad(self, parameters):
         self.set_data(*self.new_batch())
-        return self._grads(parameters)
+        return super(SVGP, self)._grads(parameters)
 
     def optimizeWithFreezingZ(self):
         self.Z.fix()
@@ -103,3 +103,39 @@ class SVGP(SparseGP):
         self.Z.unfix()
         self.kern.constrain_positive()
         self.optimize('bfgs')
+
+    def _grads(self, parameters):
+        """
+        Either get the minibatch approximate gradients, or the full gradients.
+
+        :param parameters: parameters to calculate the stochastic gradient for
+        :type parameters: np.ndarray(num_parameters)
+        """
+        if self.batchsize is None:
+            return super(SVGP, self)._grads(parameters)
+        else:
+            return self.stochastic_grad(parameters)
+
+    def optimize(self, optimizer=None, *args, **kwargs):
+        """
+        Optimize the model using self.log_likelihood and self.log_likelihood_gradient, as well as self.priors. If MPI is used this will broadcast the optimisation across all cores used.
+        kwargs are passed to the optimizer. They can be:
+
+        :param optimizer: which optimizer to use (defaults to self.preferred optimizer), a range of optimisers can be found in :module:`~GPy.inference.optimization`, they include 'scg', 'lbfgs', 'tnc'.
+        :type optimizer: string
+        :param start:
+        :type start:
+        :param messages: whether to display during optimisation
+        :type messages: bool
+        :param max_iters: maximum number of function evaluations
+        :type max_iters: int
+        :param bool ipython_notebook: whether to use ipython notebook widgets or not.
+        :param bool clear_after_finish: if in ipython notebook, we can clear the widgets after optimization.
+        """
+        if self.batchsize is None:
+            return super(SVGP, self).optimize(optimizer, *args, **kwargs)
+        else:
+            stochastic_optimizers = ['adadelta']
+            if optimizer not in stochastic_optimizers:
+                raise ValueError("Must choose an optimizer that allows for stochastic gradients, try 'adadelta'")
+            return super(SVGP, self).optimize(optimizer, *args, **kwargs)

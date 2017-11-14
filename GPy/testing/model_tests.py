@@ -626,7 +626,7 @@ class GradientTests(np.testing.TestCase):
         self.X2D = np.random.uniform(-3., 3., (40, 2))
         self.Y2D = np.sin(self.X2D[:, 0:1]) * np.sin(self.X2D[:, 1:2]) + np.random.randn(40, 1) * 0.05
 
-    def check_model(self, kern, model_type='GPRegression', dimension=1, uncertain_inputs=False):
+    def check_model(self, kern, model_type='GPRegression', dimension=1, uncertain_inputs=False, **kwargs):
         # Get the correct gradients
         if dimension == 1:
             X = self.X1D
@@ -640,9 +640,9 @@ class GradientTests(np.testing.TestCase):
         # noise = GPy.kern.White(dimension)
         kern = kern  #  + noise
         if uncertain_inputs:
-            m = model_fit(X, Y, kernel=kern, X_variance=np.random.rand(X.shape[0], X.shape[1]))
+            m = model_fit(X, Y, kernel=kern, X_variance=np.random.rand(X.shape[0], X.shape[1]), **kwargs)
         else:
-            m = model_fit(X, Y, kernel=kern)
+            m = model_fit(X, Y, kernel=kern, **kwargs)
         m.randomize()
         # contrain all parameters to be positive
         self.assertTrue(m.checkgrad())
@@ -777,6 +777,26 @@ class GradientTests(np.testing.TestCase):
         ''' Testing the sparse GP regression with rbf, linear kernel on 1d data with uncertain inputs'''
         rbflin = GPy.kern.RBF(1) + GPy.kern.White(1)
         self.check_model(rbflin, model_type='SparseGPRegression', dimension=1, uncertain_inputs=1)
+
+    def test_SVIGPRegression_rbf_white_kern_1d(self):
+        ''' Testing the SVI GP regression with rbf kernel with white kernel on 1d data '''
+        rbf = GPy.kern.RBF(1) + GPy.kern.White(1, 1e-5)
+        self.check_model(rbf, model_type='SVIGPRegression', dimension=1, batchsize=None)
+
+    def test_SVIGPRegression_rbf_white_kern_2D(self):
+        ''' Testing the SVI GP regression with rbf kernel on 2d data '''
+        rbf = GPy.kern.RBF(2) + GPy.kern.White(2, 1e-5)
+        self.check_model(rbf, model_type='SVIGPRegression', dimension=2, batchsize=None)
+
+    def test_SVIGPRegression_rbf_linear_white_kern_1D(self):
+        ''' Testing the SVI GP regression with rbf kernel on 1d data '''
+        rbflin = GPy.kern.RBF(1) + GPy.kern.Linear(1) + GPy.kern.White(1, 1e-5)
+        self.check_model(rbflin, model_type='SVIGPRegression', dimension=1, batchsize=None)
+
+    def test_SVIGPRegression_rbf_linear_white_kern_2D(self):
+        ''' Testing the SVI GP regression with rbf kernel on 2d data '''
+        rbflin = GPy.kern.RBF(2) + GPy.kern.Linear(2) + GPy.kern.White(2, 1e-5)
+        self.check_model(rbflin, model_type='SVIGPRegression', dimension=2, batchsize=None)
 
 
     def test_GPLVM_rbf_bias_white_kern_2D(self):
